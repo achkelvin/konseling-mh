@@ -5,5 +5,6 @@
 </template>
 
 <script setup lang="ts">
-import '~/assets/css/main.css'
 </script>
+
+<style src="~/assets/css/main.css"></style>
