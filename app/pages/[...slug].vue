@@ -1,8 +1,11 @@
 <script setup lang="ts">
+import { createError } from 'h3'
+import { useAsyncData, useRoute } from '#app'
+
 const route = useRoute()
 
 const { data: page } = await useAsyncData('page-' + route.path, () => {
-  return queryCollection('content').path(route.path).first()
+  return queryContent(route.path).findOne()
 })
 
 if (!page.value) {
