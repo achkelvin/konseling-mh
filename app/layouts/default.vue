@@ -66,7 +66,7 @@
         <div>
           <p class="text-sm font-semibold text-white">Hubungi Kami</p>
           <ul class="mt-3 space-y-2 text-sm text-brand-200">
-            <li>WhatsApp: 0800-0000-0000</li>
+            <li>WhatsApp: {{ wa }}</li>
             <li>halo@konselingmh.example</li>
             <li>Senin–Sabtu, 08.00–21.00 WIB</li>
           </ul>
@@ -90,6 +90,7 @@
 import { ref } from 'vue'
 
 const open = ref(false)
+const wa = useRuntimeConfig().public.whatsappNumber
 const links = [
   { to: '/#layanan', label: 'Layanan' },
   { to: '/#helper', label: 'Helper' },

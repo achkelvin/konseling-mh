@@ -18,6 +18,10 @@ export default defineEventHandler(async (event) => {
 
   bookedSlots.add(found.slot.id)
   const code = newCode('KS')
+  const person = body.person
+  const topics: string[] = Array.isArray(body.topics) ? body.topics.slice(0, 10).map(String) : []
+  const schedule = `${tanggal(found.date)}, ${found.slot.time} WIB`
+
   bookings.set(code, {
     code,
     kind: 'konseling',
@@ -26,9 +30,37 @@ export default defineEventHandler(async (event) => {
     helperId: found.helper.id,
     slotId: found.slot.id,
     optionId: option.id,
-    person: body.person,
-    topics: Array.isArray(body.topics) ? body.topics.slice(0, 10) : [],
+    person,
+    topics,
     story: body.story.trim(),
+  })
+
+  const qr = await paymentQr(option.price)
+  const summary: [string, unknown][] = [
+    ['Helper', found.helper.name],
+    ['Jadwal', schedule],
+    ['Metode', `${option.label} · ${option.durationMinutes} menit`],
+    ['Total', rupiah(option.price)],
+  ]
+  const emailSent = await notify({
+    code,
+    person,
+    total: option.price,
+    qr,
+    adminSubject: `[Konseling] ${code} — ${person.name} — ${schedule}`,
+    adminRows: [
+      ['Kode', code],
+      ...summary,
+      ['Nama', person.name],
+      ['WhatsApp', person.whatsapp],
+      ['Email', person.email],
+      ['Usia', person.age],
+      ['Jenis kelamin', person.gender === 'L' ? 'Laki-laki' : person.gender === 'P' ? 'Perempuan' : '-'],
+      ['Topik', topics.join(', ') || '-'],
+      ['Cerita', body.story.trim()],
+    ],
+    clientSubject: `Pendaftaran konseling ${code} — menunggu pembayaran`,
+    clientRows: summary,
   })
 
   return {
@@ -38,5 +70,8 @@ export default defineEventHandler(async (event) => {
     date: found.date,
     time: found.slot.time,
     method: option.label,
+    qr: qr.dataUrl,
+    qrDemo: qr.demo,
+    emailSent,
   }
 })

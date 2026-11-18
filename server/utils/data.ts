@@ -221,12 +221,11 @@ export interface ScheduleDay {
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
 const DAYS_AHEAD = 14
 
-function hash(s: string) {
-  let h = 0
-  for (const c of s) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return h
-}
-
+/**
+ * Jadwal dibangun dari `days` dan `hours` tiap helper di atas.
+ * Untuk mengubah jadwal praktik, cukup ubah dua array itu.
+ * Slot yang sudah dipesan ditandai penuh.
+ */
 export function buildSchedule(helper: Helper, now = new Date()): ScheduleDay[] {
   // "wib" adalah Date yang komponen UTC-nya menunjukkan waktu WIB
   const wib = new Date(now.getTime() + WIB_OFFSET_MS)
@@ -240,9 +239,7 @@ export function buildSchedule(helper: Helper, now = new Date()): ScheduleDay[] {
       .filter((h) => i > 0 || h > wib.getUTCHours() + 1)
       .map((h) => {
         const id = `${helper.id}_${date}_${String(h).padStart(2, '0')}`
-        // sebagian slot ditandai penuh secara deterministik agar terlihat realistis
-        const taken = hash(id) % 5 === 0 || bookedSlots.has(id)
-        return { id, time: `${String(h).padStart(2, '0')}:00`, available: !taken }
+        return { id, time: `${String(h).padStart(2, '0')}:00`, available: !bookedSlots.has(id) }
       })
     if (slots.length) out.push({ date, slots })
   }
