@@ -8,9 +8,11 @@ export default defineNuxtConfig({
   runtimeConfig: {
     smtp: { host: '', port: '587', user: '', pass: '', from: '' },
     adminEmail: '',
-    qrisPayload: '',
     public: {
       whatsappNumber: '0800-0000-0000',
+      qrisPayload: '',
+      // Rekening tujuan pembayaran (bisa ditimpa lewat NUXT_PUBLIC_BANK_*)
+      bank: { name: 'Bank Mandiri', account: '1770011516751', holder: 'Nadiah Cahyani' },
     },
   },
   app: {

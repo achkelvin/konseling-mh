@@ -11,7 +11,7 @@
             kamu siap.
           </h1>
           <p class="mt-5 max-w-md text-base leading-relaxed text-ink/70">
-            Pilih helper dan jadwal, isi formulir singkat, lalu bayar dengan QRIS. Semudah itu.
+            Pilih helper dan jadwal, isi formulir singkat, lalu bayar lewat transfer bank. Semudah itu.
           </p>
           <div class="mt-8 flex flex-wrap gap-3">
             <NuxtLink to="/konseling" class="btn-primary">Daftar Konseling</NuxtLink>
@@ -20,7 +20,7 @@
           <ul class="mt-8 flex flex-wrap gap-x-6 gap-y-2 text-sm text-ink/70">
             <li>✓ Rahasia terjaga</li>
             <li>✓ Helper terverifikasi</li>
-            <li>✓ Bayar pakai QRIS</li>
+            <li>✓ Bayar via transfer</li>
           </ul>
         </div>
 
@@ -197,7 +197,7 @@ const shownHelpers = computed(() => helpers.value?.filter((h) => h.type === tab.
 const howItWorks = [
   { title: 'Pilih helper & jadwal', text: 'Lihat profil dan slot yang masih kosong.' },
   { title: 'Isi formulir', text: 'Data diri dan cerita singkat, terkirim ke email admin.' },
-  { title: 'Bayar dengan QRIS', text: 'Nominal sudah terisi, scan dari aplikasi apa pun.' },
+  { title: 'Transfer ke rekening', text: 'Nomor rekening dan jumlah tampil setelah mendaftar.' },
   { title: 'Konfirmasi & mulai sesi', text: 'Kirim bukti via WhatsApp, admin mengirim tautan sesi.' },
 ]
 const symptoms = ['Stres', 'Cemas', 'Depresi', 'PTSD', 'Psikotik', 'Psikoaktif']
@@ -209,7 +209,7 @@ const report = [
 ]
 const faqs = [
   { q: 'Apakah cerita saya dijaga kerahasiaannya?', a: 'Ya. Isi formulir hanya dibaca admin dan helper, sesuai kode etik psikologi.' },
-  { q: 'Bagaimana cara pembayarannya?', a: 'Setelah mendaftar, kamu mendapat QRIS dengan nominal yang sudah terisi. Scan dari m-banking atau e-wallet apa pun, lalu kirim bukti ke WhatsApp admin.' },
+  { q: 'Bagaimana cara pembayarannya?', a: 'Setelah mendaftar, kamu mendapat nomor rekening Bank Mandiri dan jumlah yang harus ditransfer. Setelah transfer, kirim bukti ke WhatsApp admin.' },
   { q: 'Kapan jadwal saya dikonfirmasi?', a: 'Setelah admin memverifikasi pembayaran, biasanya dalam 1×24 jam. Tautan sesi dikirim lewat WhatsApp atau email.' },
   { q: 'Bisakah saya mengganti jadwal?', a: 'Bisa, hubungi admin lewat WhatsApp paling lambat 12 jam sebelum sesi dimulai.' },
 ]

@@ -15,8 +15,6 @@
       v-if="result"
       :code="result.code"
       :total="result.total"
-      :qr="result.qr"
-      :qr-demo="result.qrDemo"
       :email="person.email"
       :email-sent="result.emailSent"
       :rows="[['Layanan', 'Cek Kesehatan Mental']]"
@@ -55,9 +53,9 @@
 
     <div v-else>
       <h1 class="text-2xl font-bold">Ringkasan</h1>
-      <p class="mt-2 text-sm text-ink/70">Setelah dikirim, kamu akan mendapat QRIS untuk pembayaran.</p>
+      <p class="mt-2 text-sm text-ink/70">Setelah dikirim, kamu akan mendapat nomor rekening untuk transfer.</p>
       <dl class="mt-6 divide-y divide-sand-100 rounded-2xl border border-sand-200 text-sm">
-        <div v-for="[k, v] in [['Nama', person.name], ['WhatsApp', person.whatsapp], ['Email', person.email]]" :key="k" class="flex justify-between gap-6 px-5 py-3">
+        <div v-for="[k, v] in [['Nama', person.fullName], ['WhatsApp', person.whatsapp], ['Email', person.email]]" :key="k" class="flex justify-between gap-6 px-5 py-3">
           <dt class="text-ink/60">{{ k }}</dt>
           <dd class="text-right font-medium">{{ v }}</dd>
         </div>
@@ -71,8 +69,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Person } from '~/components/PersonFields.vue'
-
 definePageMeta({ layout: false })
 useHead({ title: 'Cek Kesehatan Mental — KonselingMH' })
 
@@ -86,8 +82,8 @@ const step = ref(1)
 const busy = ref(false)
 const error = ref('')
 const personValid = ref(false)
-const person = ref<Person>({ name: '', whatsapp: '', email: '', age: null, gender: '' })
-const result = ref<{ code: string; total: number; qr: string; qrDemo: boolean; emailSent: boolean } | null>(null)
+const person = ref<Person>(emptyPerson())
+const result = ref<{ code: string; total: number; emailSent: boolean } | null>(null)
 
 async function next() {
   error.value = ''

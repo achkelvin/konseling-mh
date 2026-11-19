@@ -44,7 +44,7 @@ export const services: ServiceType[] = [
       'Psikolog profesional berizin praktik untuk asesmen dan psikoterapi pada kasus sedang hingga berat.',
     points: ['Ditangani profesional berizin', 'Konseling dan psikoterapi mendalam'],
     durationMinutes: 60,
-    priceFrom: 190000,
+    priceFrom: 75000,
   },
   {
     id: 'peer',
@@ -53,7 +53,7 @@ export const services: ServiceType[] = [
       'Lulusan psikologi terlatih yang disupervisi psikolog. Cocok untuk bercerita dan masalah sehari-hari.',
     points: ['Teman bercerita yang terlatih', 'Untuk keluhan ringan dan sehari-hari'],
     durationMinutes: 60,
-    priceFrom: 65000,
+    priceFrom: 75000,
   },
   {
     id: 'keluarga',
@@ -61,29 +61,23 @@ export const services: ServiceType[] = [
     description:
       'Pendampingan untuk pasangan dan keluarga: komunikasi, konflik rumah tangga, pranikah, dan pengasuhan.',
     points: ['Sesi individu atau berpasangan', 'Fokus pada relasi dan pengasuhan'],
-    durationMinutes: 75,
-    priceFrom: 150000,
+    durationMinutes: 60,
+    priceFrom: 75000,
   },
 ]
 
-const METHOD_LABEL: Record<Method, string> = {
-  chat: 'Chat',
-  call: 'Telepon',
-  video: 'Video call',
+/** Daftar harga — sama untuk semua helper. */
+export const PRICE_LIST: Record<Method, { label: string; price: number; durationMinutes: number }> = {
+  chat: { label: 'Chat', price: 75000, durationMinutes: 60 },
+  call: { label: 'Voice Call', price: 120000, durationMinutes: 60 },
+  video: { label: 'Video Call', price: 150000, durationMinutes: 60 },
 }
 
-function options(id: string, base: number, minutes: number): HelperOption[] {
-  const add: Record<Method, number> = { chat: 0, call: 15000, video: 30000 }
-  return (Object.keys(add) as Method[]).map((method) => ({
-    id: `${id}-${method}`,
-    method,
-    label: METHOD_LABEL[method],
-    price: base + add[method],
-    durationMinutes: minutes,
-  }))
+function options(id: string): HelperOption[] {
+  return (Object.keys(PRICE_LIST) as Method[]).map((method) => ({ id: `${id}-${method}`, method, ...PRICE_LIST[method] }))
 }
 
-type Seed = Omit<Helper, 'options'> & { base: number; minutes: number }
+type Seed = Omit<Helper, 'options'>
 
 const seeds: Seed[] = [
   {
@@ -99,8 +93,6 @@ const seeds: Seed[] = [
     ratingCount: 68,
     days: [1, 2, 3, 4],
     hours: [10, 12, 14, 16],
-    base: 190000,
-    minutes: 60,
   },
   {
     id: 'h-bagas',
@@ -115,8 +107,6 @@ const seeds: Seed[] = [
     ratingCount: 41,
     days: [2, 4, 6],
     hours: [9, 13, 19, 20],
-    base: 210000,
-    minutes: 60,
   },
   {
     id: 'h-dinda',
@@ -131,8 +121,6 @@ const seeds: Seed[] = [
     ratingCount: 23,
     days: [1, 3, 5],
     hours: [15, 16, 19],
-    base: 195000,
-    minutes: 60,
   },
   {
     id: 'h-salma',
@@ -146,8 +134,6 @@ const seeds: Seed[] = [
     ratingCount: 17,
     days: [1, 2, 3, 4, 5],
     hours: [19, 20, 21],
-    base: 65000,
-    minutes: 60,
   },
   {
     id: 'h-fajar',
@@ -161,8 +147,6 @@ const seeds: Seed[] = [
     ratingCount: 9,
     days: [0, 3, 6],
     hours: [8, 9, 20, 21],
-    base: 70000,
-    minutes: 60,
   },
   {
     id: 'h-yusuf',
@@ -177,8 +161,6 @@ const seeds: Seed[] = [
     ratingCount: 32,
     days: [2, 5, 6],
     hours: [10, 13, 16, 19],
-    base: 150000,
-    minutes: 75,
   },
   {
     id: 'h-maya',
@@ -193,14 +175,12 @@ const seeds: Seed[] = [
     ratingCount: 26,
     days: [1, 4, 6],
     hours: [9, 11, 15],
-    base: 160000,
-    minutes: 75,
   },
 ]
 
-export const helpers: Helper[] = seeds.map(({ base, minutes, ...h }) => ({
+export const helpers: Helper[] = seeds.map((h) => ({
   ...h,
-  options: options(h.id, base, minutes),
+  options: options(h.id),
 }))
 
 // ---- Jadwal -----------------------------------------------------------------
@@ -275,14 +255,4 @@ export function newCode(prefix: string) {
   let s = ''
   for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)]
   return `${prefix}-${s}`
-}
-
-export function validatePerson(p: any): string | null {
-  if (!p || typeof p !== 'object') return 'Data diri wajib diisi.'
-  if (typeof p.name !== 'string' || p.name.trim().length < 2) return 'Nama wajib diisi.'
-  if (typeof p.whatsapp !== 'string' || !/^0\d{8,13}$/.test(p.whatsapp))
-    return 'Nomor WhatsApp tidak valid (contoh: 081234567890).'
-  if (typeof p.email !== 'string' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email))
-    return 'Email tidak valid.'
-  return null
 }

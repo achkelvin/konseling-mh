@@ -15,8 +15,6 @@
       v-if="result"
       :code="result.code"
       :total="result.total"
-      :qr="result.qr"
-      :qr-demo="result.qrDemo"
       :email="form.person.email"
       :email-sent="result.emailSent"
       :rows="[
@@ -152,7 +150,7 @@
     <div v-else>
       <h1 class="text-2xl font-bold">Ringkasan</h1>
       <p class="mt-2 text-sm text-ink/70">
-        Periksa kembali. Setelah dikirim, kamu akan mendapat QRIS untuk pembayaran.
+        Periksa kembali. Setelah dikirim, kamu akan mendapat nomor rekening untuk transfer.
       </p>
       <dl class="mt-6 divide-y divide-sand-100 rounded-2xl border border-sand-200 text-sm">
         <div v-for="[k, v] in summary" :key="k" class="flex justify-between gap-6 px-5 py-3">
@@ -169,8 +167,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Person } from '~/components/PersonFields.vue'
-
 definePageMeta({ layout: false })
 useHead({ title: 'Daftar Konseling — KonselingMH' })
 
@@ -192,8 +188,6 @@ const result = ref<{
   date: string
   time: string
   method: string
-  qr: string
-  qrDemo: boolean
   emailSent: boolean
 } | null>(null)
 
@@ -202,7 +196,7 @@ const form = reactive({
   helperId: '',
   optionId: '',
   slotId: '',
-  person: { name: '', whatsapp: '', email: '', age: null, gender: '' } as Person,
+  person: emptyPerson(),
   topics: [] as string[],
   story: '',
   consent: false,
@@ -255,7 +249,7 @@ const summary = computed<[string, string][]>(() => [
   ['Helper', helper.value?.name ?? '-'],
   ['Jadwal', slot.value ? `${tanggal(slot.value.date)}, ${slot.value.time} WIB` : '-'],
   ['Metode', option.value ? `${option.value.label} · ${option.value.durationMinutes} menit` : '-'],
-  ['Nama', form.person.name],
+  ['Nama', form.person.fullName],
   ['WhatsApp', form.person.whatsapp],
   ['Email', form.person.email],
   ['Topik', form.topics.join(', ') || '-'],

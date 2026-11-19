@@ -3,8 +3,8 @@ export default defineEventHandler(async (event) => {
   const fail = (statusCode: number, statusMessage: string) =>
     createError({ statusCode, statusMessage, message: statusMessage })
 
-  const personError = validatePerson(body?.person)
-  if (personError) throw fail(400, personError)
+  const invalid = personError(body?.person)
+  if (invalid) throw fail(400, invalid)
   if (typeof body.story !== 'string' || body.story.trim().length < 20)
     throw fail(400, 'Ceritakan permasalahanmu minimal 20 karakter.')
   if (body.consent !== true) throw fail(400, 'Persetujuan layanan wajib dicentang.')
@@ -18,8 +18,9 @@ export default defineEventHandler(async (event) => {
 
   bookedSlots.add(found.slot.id)
   const code = newCode('KS')
-  const person = body.person
+  const person = cleanPerson(body.person)
   const topics: string[] = Array.isArray(body.topics) ? body.topics.slice(0, 10).map(String) : []
+  const story = body.story.trim()
   const schedule = `${tanggal(found.date)}, ${found.slot.time} WIB`
 
   bookings.set(code, {
@@ -32,10 +33,9 @@ export default defineEventHandler(async (event) => {
     optionId: option.id,
     person,
     topics,
-    story: body.story.trim(),
+    story,
   })
 
-  const qr = await paymentQr(option.price)
   const summary: [string, unknown][] = [
     ['Helper', found.helper.name],
     ['Jadwal', schedule],
@@ -46,18 +46,13 @@ export default defineEventHandler(async (event) => {
     code,
     person,
     total: option.price,
-    qr,
-    adminSubject: `[Konseling] ${code} — ${person.name} — ${schedule}`,
+    adminSubject: `[Konseling] ${code} — ${person.fullName} — ${schedule}`,
     adminRows: [
       ['Kode', code],
       ...summary,
-      ['Nama', person.name],
-      ['WhatsApp', person.whatsapp],
-      ['Email', person.email],
-      ['Usia', person.age],
-      ['Jenis kelamin', person.gender === 'L' ? 'Laki-laki' : person.gender === 'P' ? 'Perempuan' : '-'],
+      ...personRows(person),
       ['Topik', topics.join(', ') || '-'],
-      ['Cerita', body.story.trim()],
+      ['Cerita', story],
     ],
     clientSubject: `Pendaftaran konseling ${code} — menunggu pembayaran`,
     clientRows: summary,
@@ -70,8 +65,6 @@ export default defineEventHandler(async (event) => {
     date: found.date,
     time: found.slot.time,
     method: option.label,
-    qr: qr.dataUrl,
-    qrDemo: qr.demo,
     emailSent,
   }
 })

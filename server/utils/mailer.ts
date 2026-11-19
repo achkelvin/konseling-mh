@@ -7,8 +7,6 @@ export interface Mail {
   subject: string
   html: string
   replyTo?: string
-  /** gambar QR, dirujuk di HTML sebagai <img src="cid:qris"> */
-  qrPng?: Buffer
 }
 
 let transporter: nodemailer.Transporter | null = null
@@ -34,9 +32,7 @@ export async function sendMail(mail: Mail) {
   if (!t) {
     const dir = join(process.cwd(), '.outbox')
     await mkdir(dir, { recursive: true })
-    const html = mail.qrPng
-      ? mail.html.replace('cid:qris', 'data:image/png;base64,' + mail.qrPng.toString('base64'))
-      : mail.html
+    const html = mail.html
     const file = join(dir, `${Date.now()}-${mail.to.replace(/[^a-z0-9]/gi, '_')}.html`)
     await writeFile(file, `<!-- To: ${mail.to} | Subject: ${mail.subject} -->\n${html}`)
     console.info(`[mail] SMTP belum diatur, email disimpan ke ${file}`)
@@ -48,7 +44,6 @@ export async function sendMail(mail: Mail) {
     replyTo: mail.replyTo,
     subject: mail.subject,
     html: mail.html,
-    attachments: mail.qrPng ? [{ filename: 'qris.png', content: mail.qrPng, cid: 'qris' }] : [],
   })
 }
 
@@ -84,25 +79,29 @@ export function adminEmail(title: string, rows: [string, unknown][]) {
   return layout(title, table(rows))
 }
 
-/** Email ke klien: ringkasan + QR pembayaran. */
+/** Email ke klien: ringkasan + instruksi transfer. */
 export function clientEmail(opts: {
   name: string
   code: string
   total: number
   rows: [string, unknown][]
-  demo: boolean
+  bank: { name: string; account: string; holder: string }
   whatsapp: string
 }) {
   return layout(
     `Halo ${opts.name}, pendaftaranmu kami terima`,
     `<p>Kode pendaftaran: <b style="font-size:18px;letter-spacing:2px">${esc(opts.code)}</b></p>
     ${table(opts.rows)}
-    <h3 style="margin-top:24px">Pembayaran via QRIS</h3>
-    <p>Scan QR berikut dengan m-banking atau e-wallet apa pun. Nominal sudah terisi otomatis:
-    <b>${rupiah(opts.total)}</b>.</p>
-    ${opts.demo ? '<p style="color:#c00"><b>QR CONTOH — jangan dibayar.</b></p>' : ''}
-    <p style="text-align:center"><img src="cid:qris" width="240" height="240" alt="QRIS"></p>
-    <p>Setelah membayar, kirim bukti pembayaran beserta kode pendaftaran ke WhatsApp admin
+    <h3 style="margin-top:24px">Pembayaran via transfer bank</h3>
+    <p>Silakan transfer <b>${rupiah(opts.total)}</b> ke rekening berikut:</p>
+    ${table([
+      ['Bank', opts.bank.name],
+      ['No. rekening', opts.bank.account],
+      ['Atas nama', opts.bank.holder],
+      ['Jumlah', rupiah(opts.total)],
+      ['Berita transfer', opts.code],
+    ])}
+    <p>Setelah transfer, kirim bukti pembayaran beserta kode pendaftaran ke WhatsApp admin
     <b>${esc(opts.whatsapp)}</b>. Jadwal dikonfirmasi setelah pembayaran diverifikasi.</p>`,
   )
 }
