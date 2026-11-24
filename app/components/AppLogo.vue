@@ -1,14 +1,21 @@
 <template>
-  <NuxtLink to="/" class="inline-flex items-center gap-2" aria-label="KonselingMH — beranda">
-    <svg viewBox="0 0 32 32" class="h-8 w-8" aria-hidden="true">
-      <circle cx="16" cy="16" r="16" class="fill-brand-600" />
-      <path
-        d="M9 13.5a4 4 0 0 1 7-2.6 4 4 0 0 1 7 2.6c0 4.2-4.6 7.2-7 9-2.4-1.800-7-4.800-7-9Z"
-        class="fill-accent-100"
-      />
-    </svg>
-    <span class="text-lg font-extrabold tracking-tight text-brand-900">
-      Konseling<span class="text-accent-500">MH</span>
-    </span>
+  <NuxtLink to="/" class="inline-flex shrink-0 items-center" :aria-label="`Rena Jiwa — ${m.common.home}`">
+    <!-- logo resmi dari contents/RenaJiwa_Logo_Pack (disalin ke public/brand) -->
+    <img
+      :src="variant === 'reversed' ? '/brand/logo-reversed.svg' : '/brand/logo.svg'"
+      alt=""
+      width="880"
+      height="301"
+      class="w-auto"
+      :class="size === 'lg' ? 'h-14' : 'h-10'"
+    />
   </NuxtLink>
 </template>
+
+<script setup lang="ts">
+withDefaults(defineProps<{ variant?: 'light' | 'reversed'; size?: 'md' | 'lg' }>(), {
+  variant: 'light',
+  size: 'md',
+})
+const { m } = useLocale()
+</script>

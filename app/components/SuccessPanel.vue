@@ -1,10 +1,10 @@
 <template>
   <div class="mx-auto flex max-w-md flex-col items-center py-6 text-center">
     <span class="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-2xl text-brand-600">✓</span>
-    <h1 class="mt-4 text-2xl font-bold">Pendaftaran diterima</h1>
+    <h1 class="mt-4 text-2xl font-bold">{{ m.success.title }}</h1>
     <p class="mt-2 text-sm text-ink/70">
-      <template v-if="emailSent">Detail dan instruksi pembayaran juga kami kirim ke <b>{{ email }}</b>.</template>
-      <template v-else>Email konfirmasi belum terkirim — simpan halaman ini atau screenshot detail di bawah.</template>
+      <template v-if="emailSent">{{ fmt(m.success.emailSent, { email }) }}</template>
+      <template v-else>{{ m.success.emailFailed }}</template>
     </p>
 
     <p class="mt-5 rounded-2xl border border-dashed border-brand-200 bg-brand-50 px-6 py-3 font-mono text-xl font-bold tracking-widest text-brand-700">
@@ -20,61 +20,59 @@
 
     <!-- Pembayaran transfer bank -->
     <section class="mt-6 w-full rounded-3xl border border-sand-200 p-5 text-left" aria-labelledby="pay-title">
-      <h2 id="pay-title" class="font-bold">Pembayaran via transfer bank</h2>
+      <h2 id="pay-title" class="font-bold">{{ m.success.payTitle }}</h2>
       <p class="mt-1 text-sm text-ink/70">
-        Transfer <b class="text-ink">{{ rupiah(total) }}</b> ke rekening berikut:
+        {{ fmt(m.success.payLead, { amount: rupiah(total) }) }}
       </p>
 
       <div v-if="qrImage" class="mt-4 rounded-2xl bg-sand-50 p-4 text-center">
-        <p class="text-sm font-semibold">Atau bayar dengan QRIS</p>
-        <img :src="qrImage" alt="QRIS pembayaran" class="mx-auto mt-3 h-52 w-52 rounded-xl bg-white p-2" />
-        <p class="mt-2 text-xs text-ink/60">Nominal sudah diatur sesuai jumlah pembayaran.</p>
+        <p class="text-sm font-semibold">{{ m.success.qrisTitle }}</p>
+        <img :src="qrImage" :alt="m.success.qrisAlt" class="mx-auto mt-3 h-52 w-52 rounded-xl bg-white p-2" />
+        <p class="mt-2 text-xs text-ink/60">{{ m.success.qrisNote }}</p>
       </div>
 
       <dl class="mt-4 space-y-3 rounded-2xl bg-sand-50 p-4 text-sm">
         <div class="flex justify-between gap-4">
-          <dt class="text-ink/60">Bank</dt>
+          <dt class="text-ink/60">{{ m.success.bank }}</dt>
           <dd class="font-semibold">{{ bank.name }}</dd>
         </div>
         <div class="flex items-center justify-between gap-4">
-          <dt class="text-ink/60">No. rekening</dt>
+          <dt class="text-ink/60">{{ m.success.account }}</dt>
           <dd class="flex items-center gap-2">
             <span class="font-mono text-base font-bold tracking-wide">{{ bank.account }}</span>
             <button type="button" class="rounded-lg border border-sand-200 bg-white px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50" @click="copy(bank.account, 'acc')">
-              {{ copied === 'acc' ? 'Tersalin ✓' : 'Salin' }}
+              {{ copied === 'acc' ? m.success.copied : m.success.copy }}
             </button>
           </dd>
         </div>
         <div class="flex justify-between gap-4">
-          <dt class="text-ink/60">Atas nama</dt>
+          <dt class="text-ink/60">{{ m.success.holder }}</dt>
           <dd class="font-semibold">{{ bank.holder }}</dd>
         </div>
         <div class="flex items-center justify-between gap-4 border-t border-sand-200 pt-3">
-          <dt class="text-ink/60">Jumlah</dt>
+          <dt class="text-ink/60">{{ m.success.amount }}</dt>
           <dd class="flex items-center gap-2">
             <span class="text-base font-extrabold text-brand-700">{{ rupiah(total) }}</span>
             <button type="button" class="rounded-lg border border-sand-200 bg-white px-2 py-1 text-xs font-semibold text-brand-600 hover:bg-brand-50" @click="copy(String(total), 'amt')">
-              {{ copied === 'amt' ? 'Tersalin ✓' : 'Salin' }}
+              {{ copied === 'amt' ? m.success.copied : m.success.copy }}
             </button>
           </dd>
         </div>
         <div class="flex justify-between gap-4">
-          <dt class="text-ink/60">Berita transfer</dt>
+          <dt class="text-ink/60">{{ m.success.reference }}</dt>
           <dd class="font-mono font-semibold">{{ code }}</dd>
         </div>
       </dl>
     </section>
 
     <ol class="mt-6 w-full space-y-2 text-left text-sm text-ink/80">
-      <li><b>1.</b> Transfer sesuai jumlah di atas, tulis kode pendaftaran di berita transfer.</li>
-      <li><b>2.</b> Kirim bukti transfer ke WhatsApp admin.</li>
-      <li><b>3.</b> Admin mengonfirmasi jadwal dan mengirim tautan sesi.</li>
+      <li v-for="(s, i) in m.success.steps" :key="i"><b>{{ i + 1 }}.</b> {{ s }}</li>
     </ol>
 
     <a :href="waLink" target="_blank" rel="noopener" class="btn-primary mt-6 w-full">
-      Kirim bukti transfer via WhatsApp
+      {{ m.success.whatsapp }}
     </a>
-    <NuxtLink to="/" class="btn-ghost mt-3 w-full">Kembali ke beranda</NuxtLink>
+    <NuxtLink to="/" class="btn-ghost mt-3 w-full">{{ m.common.backHome }}</NuxtLink>
   </div>
 </template>
 
@@ -90,6 +88,7 @@ const props = defineProps<{
 }>()
 
 const { whatsappNumber, bank, qrisPayload } = useRuntimeConfig().public
+const { m, fmt } = useLocale()
 const copied = ref('')
 const qrImage = ref('')
 
@@ -144,7 +143,7 @@ const waLink = computed(
   () =>
     `https://wa.me/${waNumber(whatsappNumber)}?text=` +
     encodeURIComponent(
-      `Halo admin, saya sudah transfer ${rupiah(props.total)} ke ${bank.name} ${bank.account} untuk pendaftaran ${props.code}. Berikut bukti transfernya:`,
+      fmt(m.value.success.waMessage, { amount: rupiah(props.total), bank: bank.name, account: bank.account, code: props.code }),
     ),
 )
 </script>

@@ -3,18 +3,17 @@ export default defineEventHandler(async (event) => {
   const fail = (statusCode: number, statusMessage: string) =>
     createError({ statusCode, statusMessage, message: statusMessage })
 
-  const invalid = personError(body?.person)
+  const lang = toLang(body?.lang)
+  const invalid = personError(body?.person, lang)
   if (invalid) throw fail(400, invalid)
-  if (typeof body.story !== 'string' || body.story.trim().length < 20)
-    throw fail(400, 'Ceritakan permasalahanmu minimal 20 karakter.')
-  if (body.consent !== true) throw fail(400, 'Persetujuan layanan wajib dicentang.')
+  if (typeof body.story !== 'string' || body.story.trim().length < 20) throw fail(400, errorText('story', lang))
+  if (body.consent !== true) throw fail(400, errorText('consent', lang))
 
   const found = typeof body.slotId === 'string' ? findSlot(body.slotId) : null
-  if (!found) throw fail(400, 'Jadwal tidak ditemukan.')
+  if (!found) throw fail(400, errorText('slot', lang))
   const option = found.helper.options.find((o) => o.id === body.optionId)
-  if (!option) throw fail(400, 'Metode konseling tidak valid.')
-  if (!found.slot.available)
-    throw fail(409, 'Jadwal ini baru saja dipesan orang lain. Silakan pilih jadwal lain.')
+  if (!option) throw fail(400, errorText('option', lang))
+  if (!found.slot.available) throw fail(409, errorText('taken', lang))
 
   bookedSlots.add(found.slot.id)
   const code = newCode('KS')
@@ -54,8 +53,20 @@ export default defineEventHandler(async (event) => {
       ['Topik', topics.join(', ') || '-'],
       ['Cerita', story],
     ],
-    clientSubject: `Pendaftaran konseling ${code} — menunggu pembayaran`,
-    clientRows: summary,
+    clientSubject:
+      lang === 'en'
+        ? `Counseling registration ${code} — awaiting payment`
+        : `Pendaftaran konseling ${code} — menunggu pembayaran`,
+    clientRows:
+      lang === 'en'
+        ? [
+            ['Helper', found.helper.name],
+            ['Time', `${tanggal(found.date, 'en')}, ${found.slot.time} WIB`],
+            ['Method', `${option.label} · ${option.durationMinutes} min`],
+            ['Total', rupiah(option.price)],
+          ]
+        : summary,
+    lang,
   })
 
   return {

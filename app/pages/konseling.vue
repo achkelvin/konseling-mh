@@ -1,12 +1,12 @@
 <template>
   <WizardShell
-    title="Daftar Konseling"
-    :steps="steps"
+    :title="m.konseling.title"
+    :steps="m.konseling.steps"
     :current="step"
     :can-next="canNext"
     :busy="busy"
     :error="error"
-    submit-label="Kirim & Bayar"
+    :submit-label="m.common.submit"
     :hide-footer="!!result"
     @back="back"
     @next="next"
@@ -18,18 +18,18 @@
       :email="form.person.email"
       :email-sent="result.emailSent"
       :rows="[
-        ['Helper', result.helperName],
-        ['Jadwal', `${tanggal(result.date)}, ${result.time} WIB`],
-        ['Metode', result.method],
+        [m.konseling.rowHelper, result.helperName],
+        [m.konseling.rowSchedule, `${date(result.date)}, ${result.time} WIB`],
+        [m.konseling.rowMethod, result.method],
       ]"
     />
 
     <!-- 1. Helper & jadwal -->
     <div v-else-if="step === 1">
-      <h1 class="text-2xl font-bold">Pilih Helper & Jadwal</h1>
-      <p class="mt-2 text-sm text-ink/70">Semua waktu dalam WIB.</p>
+      <h1 class="text-2xl font-bold">{{ m.konseling.pickTitle }}</h1>
+      <p class="mt-2 text-sm text-ink/70">{{ m.konseling.allWib }}</p>
 
-      <div class="mt-5 flex flex-wrap gap-2" role="radiogroup" aria-label="Jenis layanan">
+      <div class="mt-5 flex flex-wrap gap-2" role="radiogroup" :aria-label="m.konseling.serviceType">
         <button
           v-for="s in data?.services"
           :key="s.id"
@@ -40,7 +40,7 @@
           :class="form.type === s.id ? 'border-brand-600 bg-brand-600 text-white' : 'border-sand-200 hover:border-brand-200'"
           @click="pickType(s.id)"
         >
-          {{ s.label }}
+          {{ m.services[s.id as keyof typeof m.services].label }}
         </button>
       </div>
 
@@ -58,15 +58,15 @@
           <HelperAvatar :name="h.name" />
           <span class="flex-1">
             <span class="block text-sm font-semibold">{{ h.name }}</span>
-            <span class="block text-xs text-ink/60">{{ h.title }}</span>
+            <span class="block text-xs text-ink/60">{{ m.helpers[h.id]?.title ?? h.title }}</span>
           </span>
-          <span class="text-xs text-ink/60">{{ h.availableSlotCount }} slot</span>
+          <span class="text-xs text-ink/60">{{ h.availableSlotCount }} {{ m.common.slots }}</span>
         </button>
       </div>
 
       <template v-if="helper">
-        <h2 class="mt-8 text-sm font-semibold">Metode konseling</h2>
-        <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Metode konseling">
+        <h2 class="mt-8 text-sm font-semibold">{{ m.konseling.method }}</h2>
+        <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" :aria-label="m.konseling.method">
           <button
             v-for="o in helper.options"
             :key="o.id"
@@ -78,14 +78,14 @@
             @click="form.optionId = o.id"
           >
             <span class="block font-semibold">{{ o.label }}</span>
-            <span class="text-xs opacity-80">{{ rupiah(o.price) }} / {{ o.durationMinutes }} menit</span>
+            <span class="text-xs opacity-80">{{ rupiah(o.price) }} / {{ o.durationMinutes }} {{ m.common.minutes }}</span>
           </button>
         </div>
 
-        <h2 class="mt-8 text-sm font-semibold">Jadwal tersedia</h2>
-        <p v-if="!helper.schedules.length" class="mt-2 text-sm text-ink/60">Belum ada jadwal untuk helper ini.</p>
+        <h2 class="mt-8 text-sm font-semibold">{{ m.konseling.available }}</h2>
+        <p v-if="!helper.schedules.length" class="mt-2 text-sm text-ink/60">{{ m.konseling.noSchedule }}</p>
         <div v-for="d in helper.schedules" :key="d.date" class="mt-4">
-          <h3 class="text-xs font-medium text-ink/60">{{ tanggal(d.date) }}</h3>
+          <h3 class="font-sans text-xs font-medium text-ink/60">{{ date(d.date) }}</h3>
           <div class="mt-1.5 flex flex-wrap gap-2">
             <button
               v-for="s in d.slots"
@@ -106,59 +106,54 @@
 
     <!-- 2. Formulir -->
     <div v-else-if="step === 2">
-      <h1 class="text-2xl font-bold">Data Diri & Cerita</h1>
-      <p class="mb-6 mt-2 text-sm text-ink/70">Formulir ini dikirim ke email admin dan hanya dipakai untuk keperluan sesi.</p>
+      <h1 class="text-2xl font-bold">{{ m.konseling.formTitle }}</h1>
+      <p class="mb-6 mt-2 text-sm text-ink/70">{{ m.konseling.formLead }}</p>
       <PersonFields v-model="form.person" v-model:valid="personValid" />
 
       <fieldset class="mt-6">
-        <legend class="label">Topik (boleh lebih dari satu)</legend>
+        <legend class="label">{{ m.konseling.topicsLegend }}</legend>
         <div class="flex flex-wrap gap-2">
           <label
-            v-for="t in topics"
+            v-for="(t, i) in TOPICS"
             :key="t"
             class="cursor-pointer rounded-full border px-3.5 py-1.5 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500"
             :class="form.topics.includes(t) ? 'border-brand-600 bg-brand-600 text-white' : 'border-sand-200 hover:border-brand-200'"
           >
             <input v-model="form.topics" type="checkbox" :value="t" class="sr-only" />
-            {{ t }}
+            {{ m.konseling.topics[i] }}
           </label>
         </div>
       </fieldset>
 
-      <label class="label mt-6" for="story">Ceritakan singkat permasalahanmu</label>
+      <label class="label mt-6" for="story">{{ m.konseling.story }}</label>
       <textarea
         id="story"
         v-model="form.story"
         class="field min-h-32"
         maxlength="2000"
-        placeholder="Apa yang sedang kamu rasakan atau hadapi?"
+        :placeholder="m.konseling.storyPlaceholder"
       />
       <p class="mt-1 text-xs" :class="form.story.trim().length < 20 ? 'text-ink/50' : 'text-brand-600'">
-        {{ form.story.trim().length }}/2000 · minimal 20 karakter
+        {{ fmt(m.konseling.storyCount, { n: form.story.trim().length }) }}
       </p>
 
       <label class="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl bg-sand-50 p-4 text-sm">
         <input v-model="form.consent" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-600" />
-        <span>
-          Saya menyetujui ketentuan layanan dan memahami bahwa layanan ini bukan layanan gawat
-          darurat.
-        </span>
+        <span>{{ m.konseling.consent }}</span>
       </label>
     </div>
 
     <!-- 3. Ringkasan -->
     <div v-else>
-      <h1 class="text-2xl font-bold">Ringkasan</h1>
-      <p class="mt-2 text-sm text-ink/70">
-        Periksa kembali. Setelah dikirim, kamu akan mendapat nomor rekening untuk transfer.
-      </p>
+      <h1 class="text-2xl font-bold">{{ m.konseling.summaryTitle }}</h1>
+      <p class="mt-2 text-sm text-ink/70">{{ m.konseling.summaryLead }}</p>
       <dl class="mt-6 divide-y divide-sand-100 rounded-2xl border border-sand-200 text-sm">
         <div v-for="[k, v] in summary" :key="k" class="flex justify-between gap-6 px-5 py-3">
           <dt class="text-ink/60">{{ k }}</dt>
           <dd class="text-right font-medium">{{ v }}</dd>
         </div>
         <div class="flex justify-between gap-6 bg-brand-50 px-5 py-4">
-          <dt class="font-semibold">Total</dt>
+          <dt class="font-semibold">{{ m.common.total }}</dt>
           <dd class="text-lg font-extrabold text-brand-700">{{ rupiah(option?.price ?? 0) }}</dd>
         </div>
       </dl>
@@ -168,10 +163,11 @@
 
 <script setup lang="ts">
 definePageMeta({ layout: false })
-useHead({ title: 'Daftar Konseling — KonselingMH' })
+const { m, fmt, date, lang } = useLocale()
+useHead({ title: () => m.value.konseling.pageTitle })
 
-const steps = ['Helper & Jadwal', 'Formulir', 'Ringkasan & Bayar']
-const topics = ['Kecemasan', 'Stres', 'Keluarga', 'Pasangan', 'Pekerjaan / kuliah', 'Trauma', 'Pengembangan diri', 'Lainnya']
+// Nilai topik disimpan dalam bahasa Indonesia (untuk email admin); labelnya dari kamus bahasa.
+const TOPICS = ['Kecemasan', 'Stres', 'Keluarga', 'Pasangan', 'Pekerjaan / kuliah', 'Trauma', 'Pengembangan diri', 'Lainnya']
 
 const route = useRoute()
 const { data } = await useFetch('/api/services')
@@ -244,16 +240,19 @@ const canNext = computed(() => {
   }
 })
 
-const summary = computed<[string, string][]>(() => [
-  ['Layanan', typeLabel[form.type] ?? '-'],
-  ['Helper', helper.value?.name ?? '-'],
-  ['Jadwal', slot.value ? `${tanggal(slot.value.date)}, ${slot.value.time} WIB` : '-'],
-  ['Metode', option.value ? `${option.value.label} · ${option.value.durationMinutes} menit` : '-'],
-  ['Nama', form.person.fullName],
-  ['WhatsApp', form.person.whatsapp],
-  ['Email', form.person.email],
-  ['Topik', form.topics.join(', ') || '-'],
-])
+const summary = computed<[string, string][]>(() => {
+  const k = m.value.konseling
+  return [
+    [k.rowService, m.value.services[form.type as keyof typeof m.value.services]?.label ?? '-'],
+    [k.rowHelper, helper.value?.name ?? '-'],
+    [k.rowSchedule, slot.value ? `${date(slot.value.date)}, ${slot.value.time} WIB` : '-'],
+    [k.rowMethod, option.value ? `${option.value.label} · ${option.value.durationMinutes} ${m.value.common.minutes}` : '-'],
+    [k.rowName, form.person.fullName],
+    ['WhatsApp', form.person.whatsapp],
+    ['Email', form.person.email],
+    [k.rowTopics, form.topics.map((t) => k.topics[TOPICS.indexOf(t)] ?? t).join(', ') || '-'],
+  ]
+})
 
 function back() {
   error.value = ''
@@ -262,7 +261,7 @@ function back() {
 
 async function next() {
   error.value = ''
-  if (step.value < steps.length) {
+  if (step.value < m.value.konseling.steps.length) {
     step.value++
     return
   }
@@ -277,10 +276,11 @@ async function next() {
         topics: form.topics,
         story: form.story,
         consent: form.consent,
+        lang: lang.value,
       },
     })
   } catch (e: any) {
-    error.value = e?.data?.message ?? 'Pendaftaran gagal dikirim. Coba lagi.'
+    error.value = e?.data?.message ?? m.value.common.sendFailed
     if (e?.statusCode === 409) {
       // slot keburu diambil: muat ulang jadwal dan kembali ke pemilihan slot
       await refresh()

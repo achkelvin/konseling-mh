@@ -12,6 +12,7 @@ export async function notify(opts: {
   adminRows: [string, unknown][]
   clientSubject: string
   clientRows: [string, unknown][]
+  lang: Lang
 }) {
   const config = useRuntimeConfig()
   try {
@@ -31,6 +32,7 @@ export async function notify(opts: {
         rows: opts.clientRows,
         bank: config.public.bank,
         whatsapp: config.public.whatsappNumber,
+        lang: opts.lang,
       }),
     })
     return true

@@ -54,8 +54,8 @@ const esc = (s: unknown) =>
 
 export const rupiah = (n: number) => 'Rp' + n.toLocaleString('id-ID')
 
-export const tanggal = (date: string) =>
-  new Date(date + 'T00:00:00Z').toLocaleDateString('id-ID', {
+export const tanggal = (date: string, lang: Lang = 'id') =>
+  new Date(date + 'T00:00:00Z').toLocaleDateString(lang === 'en' ? 'en-GB' : 'id-ID', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC',
   })
 
@@ -68,10 +68,34 @@ function table(rows: [string, unknown][]) {
     .join('')}</table>`
 }
 
-function layout(title: string, body: string) {
+function layout(title: string, body: string, lang: Lang = 'id') {
   return `<div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;color:#1f2a28">
   <h2 style="color:#1e554d">${esc(title)}</h2>${body}
-  <p style="font-size:12px;color:#888;margin-top:32px">KonselingMH — email ini dikirim otomatis.</p></div>`
+  <p style="font-size:12px;color:#888;margin-top:32px">${MAIL[lang].footer}</p></div>`
+}
+
+/** Teks email ke klien dalam dua bahasa. Email ke admin selalu bahasa Indonesia. */
+const MAIL = {
+  id: {
+    footer: 'Rena Jiwa — email ini dikirim otomatis.',
+    hello: (n: string) => `Halo ${n}, pendaftaranmu kami terima`,
+    code: 'Kode pendaftaran',
+    payTitle: 'Pembayaran via transfer bank',
+    payLead: (a: string) => `Silakan transfer <b>${a}</b> ke rekening berikut:`,
+    bank: 'Bank', account: 'No. rekening', holder: 'Atas nama', amount: 'Jumlah', reference: 'Berita transfer',
+    after: (wa: string) =>
+      `Setelah transfer, kirim bukti pembayaran beserta kode pendaftaran ke WhatsApp admin <b>${wa}</b>. Jadwal dikonfirmasi setelah pembayaran diverifikasi.`,
+  },
+  en: {
+    footer: 'Rena Jiwa — this email was sent automatically.',
+    hello: (n: string) => `Hi ${n}, we've received your registration`,
+    code: 'Registration code',
+    payTitle: 'Payment by bank transfer',
+    payLead: (a: string) => `Please transfer <b>${a}</b> to the following account:`,
+    bank: 'Bank', account: 'Account no.', holder: 'Account name', amount: 'Amount', reference: 'Transfer note',
+    after: (wa: string) =>
+      `After transferring, send the receipt with your registration code to the admin on WhatsApp <b>${wa}</b>. Your session is confirmed once the payment is verified.`,
+  },
 }
 
 /** Email ke admin: seluruh isi formulir. */
@@ -87,21 +111,23 @@ export function clientEmail(opts: {
   rows: [string, unknown][]
   bank: { name: string; account: string; holder: string }
   whatsapp: string
+  lang: Lang
 }) {
+  const t = MAIL[opts.lang]
   return layout(
-    `Halo ${opts.name}, pendaftaranmu kami terima`,
-    `<p>Kode pendaftaran: <b style="font-size:18px;letter-spacing:2px">${esc(opts.code)}</b></p>
+    t.hello(opts.name),
+    `<p>${t.code}: <b style="font-size:18px;letter-spacing:2px">${esc(opts.code)}</b></p>
     ${table(opts.rows)}
-    <h3 style="margin-top:24px">Pembayaran via transfer bank</h3>
-    <p>Silakan transfer <b>${rupiah(opts.total)}</b> ke rekening berikut:</p>
+    <h3 style="margin-top:24px">${t.payTitle}</h3>
+    <p>${t.payLead(rupiah(opts.total))}</p>
     ${table([
-      ['Bank', opts.bank.name],
-      ['No. rekening', opts.bank.account],
-      ['Atas nama', opts.bank.holder],
-      ['Jumlah', rupiah(opts.total)],
-      ['Berita transfer', opts.code],
+      [t.bank, opts.bank.name],
+      [t.account, opts.bank.account],
+      [t.holder, opts.bank.holder],
+      [t.amount, rupiah(opts.total)],
+      [t.reference, opts.code],
     ])}
-    <p>Setelah transfer, kirim bukti pembayaran beserta kode pendaftaran ke WhatsApp admin
-    <b>${esc(opts.whatsapp)}</b>. Jadwal dikonfirmasi setelah pembayaran diverifikasi.</p>`,
+    <p>${t.after(esc(opts.whatsapp))}</p>`,
+    opts.lang,
   )
 }

@@ -2,67 +2,63 @@
   <div>
     <section class="bg-gradient-to-b from-brand-50 to-sand-50">
       <div class="container-page py-12">
-        <h1 class="text-3xl font-extrabold tracking-tight text-brand-900">Jadwal Helper</h1>
-        <p class="mt-2 max-w-xl text-sm text-ink/70">
-          Lihat jadwal yang masih kosong, lalu klik jam yang cocok untuk langsung mendaftar.
-        </p>
+        <h1 class="text-3xl font-extrabold tracking-tight text-brand-900">{{ m.jadwal.title }}</h1>
+        <p class="mt-2 max-w-xl text-sm text-ink/70">{{ m.jadwal.lead }}</p>
 
         <div class="card mt-8 grid gap-4 sm:grid-cols-3">
           <div>
-            <label class="label" for="f-type">Jenis helper</label>
+            <label class="label" for="f-type">{{ m.jadwal.type }}</label>
             <select id="f-type" v-model="type" class="field">
-              <option value="">Semua jenis helper</option>
-              <option v-for="(label, id) in typeLabel" :key="id" :value="id">{{ label }}</option>
+              <option value="">{{ m.jadwal.allTypes }}</option>
+              <option v-for="(s, id) in m.services" :key="id" :value="id">{{ s.label }}</option>
             </select>
           </div>
           <div>
-            <label class="label" for="f-gender">Jenis kelamin</label>
+            <label class="label" for="f-gender">{{ m.jadwal.gender }}</label>
             <select id="f-gender" v-model="gender" class="field">
-              <option value="">Semua</option>
-              <option value="L">Laki-laki</option>
-              <option value="P">Perempuan</option>
+              <option value="">{{ m.jadwal.all }}</option>
+              <option value="L">{{ m.jadwal.male }}</option>
+              <option value="P">{{ m.jadwal.female }}</option>
             </select>
           </div>
           <div>
-            <label class="label" for="f-q">Cari</label>
-            <input id="f-q" v-model.trim="q" class="field" type="search" placeholder="Cari helper…" />
+            <label class="label" for="f-q">{{ m.jadwal.search }}</label>
+            <input id="f-q" v-model.trim="q" class="field" type="search" :placeholder="m.jadwal.searchPlaceholder" />
           </div>
         </div>
       </div>
     </section>
 
     <section class="container-page pb-20">
-      <p v-if="!list.length" class="card text-center text-sm text-ink/60">
-        Tidak ada helper yang cocok dengan filter ini.
-      </p>
+      <p v-if="!list.length" class="card text-center text-sm text-ink/60">{{ m.jadwal.empty }}</p>
       <div class="grid gap-6 lg:grid-cols-2">
         <article v-for="h in list" :key="h.id" class="card">
           <div class="flex gap-4">
             <HelperAvatar :name="h.name" />
             <div>
               <h2 class="font-semibold">{{ h.name }}</h2>
-              <p class="text-sm text-brand-700">{{ h.title }}</p>
+              <p class="text-sm text-brand-700">{{ m.helpers[h.id]?.title ?? h.title }}</p>
               <p v-if="h.license" class="text-xs text-ink/50">{{ h.license }}</p>
             </div>
           </div>
-          <p class="mt-4 text-sm leading-relaxed text-ink/70">{{ h.description }}</p>
+          <p class="mt-4 text-sm leading-relaxed text-ink/70">{{ m.helpers[h.id]?.description ?? h.description }}</p>
 
           <div v-for="d in visibleDays(h)" :key="d.date" class="mt-5">
-            <h3 class="text-sm font-semibold">{{ tanggal(d.date) }}</h3>
+            <h3 class="font-sans text-sm font-semibold">{{ date(d.date) }}</h3>
             <ul class="mt-2 flex flex-wrap gap-2">
               <li v-for="s in d.slots" :key="s.id">
                 <NuxtLink
                   v-if="s.available"
                   :to="{ path: '/konseling', query: { helper: h.id, slot: s.id } }"
                   class="inline-flex items-center rounded-full border border-brand-200 bg-brand-50 px-3 py-1.5 text-sm font-medium text-brand-700 transition hover:bg-brand-600 hover:text-white"
-                  :aria-label="`Pilih jadwal ${tanggal(d.date)} pukul ${s.time} WIB`"
+                  :aria-label="fmt(m.jadwal.pick, { date: date(d.date), time: s.time })"
                 >
                   {{ s.time }} WIB
                 </NuxtLink>
                 <span
                   v-else
                   class="inline-flex rounded-full border border-sand-200 px-3 py-1.5 text-sm text-ink/35 line-through"
-                  title="Sudah dipesan"
+                  :title="m.jadwal.booked"
                 >
                   {{ s.time }} WIB
                 </span>
@@ -71,13 +67,13 @@
           </div>
 
           <div class="mt-5 flex flex-wrap items-center justify-between gap-2 border-t border-sand-100 pt-4 text-xs text-ink/60">
-            <span>{{ h.availableSlotCount }} jadwal tersedia dalam 2 minggu ke depan</span>
+            <span>{{ fmt(m.jadwal.available, { n: h.availableSlotCount }) }}</span>
             <button
               v-if="h.schedules.length > 3"
               class="font-semibold text-brand-600 hover:underline"
               @click="toggle(h.id)"
             >
-              {{ expanded.has(h.id) ? 'Tampilkan lebih sedikit' : 'Lihat semua jadwal' }}
+              {{ expanded.has(h.id) ? m.jadwal.showLess : m.jadwal.showAll }}
             </button>
           </div>
         </article>
@@ -87,7 +83,8 @@
 </template>
 
 <script setup lang="ts">
-useHead({ title: 'Jadwal Helper — KonselingMH' })
+const { m, fmt, date } = useLocale()
+useHead({ title: () => m.value.jadwal.pageTitle })
 const { data: helpers } = await useFetch('/api/helpers')
 
 const gender = ref('')

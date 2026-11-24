@@ -1,6 +1,7 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
-  const invalid = personError(body?.person)
+  const lang = toLang(body?.lang)
+  const invalid = personError(body?.person, lang)
   if (invalid) throw createError({ statusCode: 400, statusMessage: invalid, message: invalid })
 
   const person = cleanPerson(body.person)
@@ -23,8 +24,18 @@ export default defineEventHandler(async (event) => {
     total: SCREENING_PRICE,
     adminSubject: `[Cek Kesehatan Mental] ${code} — ${person.fullName}`,
     adminRows: [['Kode', code], ...summary, ...personRows(person)],
-    clientSubject: `Pendaftaran cek kesehatan mental ${code} — menunggu pembayaran`,
-    clientRows: summary,
+    clientSubject:
+      lang === 'en'
+        ? `Mental health check registration ${code} — awaiting payment`
+        : `Pendaftaran cek kesehatan mental ${code} — menunggu pembayaran`,
+    clientRows:
+      lang === 'en'
+        ? [
+            ['Service', 'Mental Health Check'],
+            ['Total', rupiah(SCREENING_PRICE)],
+          ]
+        : summary,
+    lang,
   })
 
   return { code, total: SCREENING_PRICE, emailSent }
