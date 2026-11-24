@@ -1,7 +1,7 @@
 <template>
   <div class="mx-auto flex max-w-md flex-col items-center py-6 text-center">
     <span class="flex h-14 w-14 items-center justify-center rounded-full bg-brand-100 text-2xl text-brand-600">✓</span>
-    <h1 class="mt-4 text-2xl font-bold">{{ m.success.title }}</h1>
+    <h1 class="mt-4 text-2xl font-medium text-brand-700">{{ m.success.title }}</h1>
     <p class="mt-2 text-sm text-ink/70">
       <template v-if="emailSent">{{ fmt(m.success.emailSent, { email }) }}</template>
       <template v-else>{{ m.success.emailFailed }}</template>
@@ -19,8 +19,13 @@
     </dl>
 
     <!-- Pembayaran transfer bank -->
-    <section class="mt-6 w-full rounded-3xl border border-sand-200 p-5 text-left" aria-labelledby="pay-title">
-      <h2 id="pay-title" class="font-bold">{{ m.success.payTitle }}</h2>
+    <section class="mt-6 w-full rounded-2xl border border-sand-300 bg-white p-5 text-left" aria-labelledby="pay-title">
+      <h2 id="pay-title" class="font-display text-lg font-medium text-brand-700">{{ m.success.payTitle }}</h2>
+      <!-- Brief: detail pembayaran tidak ditampilkan di website; admin mengirimnya (flag showPaymentDetails) -->
+      <p v-if="!SITE.featureFlags.showPaymentDetails" class="mt-2 text-sm leading-relaxed text-ink/80">
+        {{ fmt(m.success.payAdmin, { amount: rupiah(total) }) }}
+      </p>
+      <template v-else>
       <p class="mt-1 text-sm text-ink/70">
         {{ fmt(m.success.payLead, { amount: rupiah(total) }) }}
       </p>
@@ -63,14 +68,15 @@
           <dd class="font-mono font-semibold">{{ code }}</dd>
         </div>
       </dl>
+      </template>
     </section>
 
     <ol class="mt-6 w-full space-y-2 text-left text-sm text-ink/80">
       <li v-for="(s, i) in m.success.steps" :key="i"><b>{{ i + 1 }}.</b> {{ s }}</li>
     </ol>
 
-    <a :href="waLink" target="_blank" rel="noopener" class="btn-primary mt-6 w-full">
-      {{ m.success.whatsapp }}
+    <a :href="waHref" target="_blank" rel="noopener" class="btn-primary mt-6 w-full">
+      <WhatsAppIcon class="h-4 w-4" /> {{ m.success.whatsapp }}
     </a>
     <NuxtLink to="/" class="btn-ghost mt-3 w-full">{{ m.common.backHome }}</NuxtLink>
   </div>
@@ -87,7 +93,7 @@ const props = defineProps<{
   emailSent: boolean
 }>()
 
-const { whatsappNumber, bank, qrisPayload } = useRuntimeConfig().public
+const { bank, qrisPayload } = useRuntimeConfig().public
 const { m, fmt } = useLocale()
 const copied = ref('')
 const qrImage = ref('')
@@ -117,7 +123,7 @@ function qrisWithAmount(payload: string, amount: number) {
 watch(
   () => [qrisPayload, props.total],
   async () => {
-    if (!qrisPayload) {
+    if (!qrisPayload || !SITE.featureFlags.showPaymentDetails) {
       qrImage.value = ''
       return
     }
@@ -139,11 +145,7 @@ async function copy(text: string, key: string) {
   }
 }
 
-const waLink = computed(
-  () =>
-    `https://wa.me/${waNumber(whatsappNumber)}?text=` +
-    encodeURIComponent(
-      fmt(m.value.success.waMessage, { amount: rupiah(props.total), bank: bank.name, account: bank.account, code: props.code }),
-    ),
+const waHref = computed(() =>
+  waLink(fmt(m.value.success.waMessage, { amount: rupiah(props.total), code: props.code })),
 )
 </script>

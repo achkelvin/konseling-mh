@@ -80,7 +80,10 @@ const MAIL = {
     footer: 'Rena Jiwa — email ini dikirim otomatis.',
     hello: (n: string) => `Halo ${n}, pendaftaranmu kami terima`,
     code: 'Kode pendaftaran',
-    payTitle: 'Pembayaran via transfer bank',
+    payTitle: 'Pembayaran',
+    adminSends: (a: string, wa: string) =>
+      `Total yang perlu dibayar: <b>${a}</b>. Admin akan mengirim detail pembayaran (QRIS atau transfer bank; PayPal untuk luar negeri) lewat WhatsApp atau email, paling lambat 2 jam di jam kerja. Ada pertanyaan? Hubungi admin di WhatsApp <b>${wa}</b>.`,
+    reschedule: 'Ganti jadwal gratis jika lebih dari 24 jam sebelum sesi. Kurang dari itu: biaya admin Rp50.000 atau sesi hangus. Layanan ini bukan layanan gawat darurat.',
     payLead: (a: string) => `Silakan transfer <b>${a}</b> ke rekening berikut:`,
     bank: 'Bank', account: 'No. rekening', holder: 'Atas nama', amount: 'Jumlah', reference: 'Berita transfer',
     after: (wa: string) =>
@@ -90,7 +93,10 @@ const MAIL = {
     footer: 'Rena Jiwa — this email was sent automatically.',
     hello: (n: string) => `Hi ${n}, we've received your registration`,
     code: 'Registration code',
-    payTitle: 'Payment by bank transfer',
+    payTitle: 'Payment',
+    adminSends: (a: string, wa: string) =>
+      `Amount due: <b>${a}</b>. The admin will send the payment details (QRIS or bank transfer; PayPal from abroad) via WhatsApp or email, within 2 hours during working hours. Questions? Contact the admin on WhatsApp <b>${wa}</b>.`,
+    reschedule: 'Rescheduling is free more than 24 hours before the session. Within 24 hours: a Rp50,000 admin fee or the session is forfeited. This is not an emergency service.',
     payLead: (a: string) => `Please transfer <b>${a}</b> to the following account:`,
     bank: 'Bank', account: 'Account no.', holder: 'Account name', amount: 'Amount', reference: 'Transfer note',
     after: (wa: string) =>
@@ -114,12 +120,9 @@ export function clientEmail(opts: {
   lang: Lang
 }) {
   const t = MAIL[opts.lang]
-  return layout(
-    t.hello(opts.name),
-    `<p>${t.code}: <b style="font-size:18px;letter-spacing:2px">${esc(opts.code)}</b></p>
-    ${table(opts.rows)}
-    <h3 style="margin-top:24px">${t.payTitle}</h3>
-    <p>${t.payLead(rupiah(opts.total))}</p>
+  // Brief: nomor rekening/QRIS/PayPal tidak ditampilkan di website; admin mengirimnya.
+  const payment = SITE.featureFlags.showPaymentDetails
+    ? `<p>${t.payLead(rupiah(opts.total))}</p>
     ${table([
       [t.bank, opts.bank.name],
       [t.account, opts.bank.account],
@@ -127,7 +130,15 @@ export function clientEmail(opts: {
       [t.amount, rupiah(opts.total)],
       [t.reference, opts.code],
     ])}
-    <p>${t.after(esc(opts.whatsapp))}</p>`,
+    <p>${t.after(esc(opts.whatsapp))}</p>`
+    : `<p>${t.adminSends(rupiah(opts.total), esc(opts.whatsapp))}</p>`
+  return layout(
+    t.hello(opts.name),
+    `<p>${t.code}: <b style="font-size:18px;letter-spacing:2px">${esc(opts.code)}</b></p>
+    ${table(opts.rows)}
+    <h3 style="margin-top:24px">${t.payTitle}</h3>
+    ${payment}
+    <p style="font-size:13px;color:#666">${t.reschedule}</p>`,
     opts.lang,
   )
 }

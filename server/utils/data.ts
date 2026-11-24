@@ -1,196 +1,9 @@
-// Data contoh (mock). Ganti dengan database sungguhan saat produksi.
-
-export type HelperType = 'psikolog' | 'peer' | 'keluarga'
-export type Method = 'chat' | 'call' | 'video'
-
-export interface ServiceType {
-  id: HelperType
-  label: string
-  description: string
-  points: string[]
-  durationMinutes: number
-  priceFrom: number
-}
-
-export interface HelperOption {
-  id: string
-  method: Method
-  label: string
-  price: number
-  durationMinutes: number
-}
-
-export interface Helper {
-  id: string
-  name: string
-  gender: 'L' | 'P'
-  type: HelperType
-  title: string
-  license?: string
-  description: string
-  rating: number
-  ratingCount: number
-  options: HelperOption[]
-  /** hari kerja (0 = Minggu) dan jam mulai sesi, WIB */
-  days: number[]
-  hours: number[]
-}
-
-export const services: ServiceType[] = [
-  {
-    id: 'psikolog',
-    label: 'Psikolog',
-    description:
-      'Psikolog profesional berizin praktik untuk asesmen dan psikoterapi pada kasus sedang hingga berat.',
-    points: ['Ditangani profesional berizin', 'Konseling dan psikoterapi mendalam'],
-    durationMinutes: 60,
-    priceFrom: 75000,
-  },
-  {
-    id: 'peer',
-    label: 'Peer-Counselor',
-    description:
-      'Lulusan psikologi terlatih yang disupervisi psikolog. Cocok untuk bercerita dan masalah sehari-hari.',
-    points: ['Teman bercerita yang terlatih', 'Untuk keluhan ringan dan sehari-hari'],
-    durationMinutes: 60,
-    priceFrom: 75000,
-  },
-  {
-    id: 'keluarga',
-    label: 'Konselor Keluarga',
-    description:
-      'Pendampingan untuk pasangan dan keluarga: komunikasi, konflik rumah tangga, pranikah, dan pengasuhan.',
-    points: ['Sesi individu atau berpasangan', 'Fokus pada relasi dan pengasuhan'],
-    durationMinutes: 60,
-    priceFrom: 75000,
-  },
-]
-
-/** Daftar harga — sama untuk semua helper. */
-export const PRICE_LIST: Record<Method, { label: string; price: number; durationMinutes: number }> = {
-  chat: { label: 'Chat', price: 75000, durationMinutes: 60 },
-  call: { label: 'Voice Call', price: 120000, durationMinutes: 60 },
-  video: { label: 'Video Call', price: 150000, durationMinutes: 60 },
-}
-
-function options(id: string): HelperOption[] {
-  return (Object.keys(PRICE_LIST) as Method[]).map((method) => ({ id: `${id}-${method}`, method, ...PRICE_LIST[method] }))
-}
-
-type Seed = Omit<Helper, 'options'>
-
-const seeds: Seed[] = [
-  {
-    id: 'h-ratna',
-    name: 'Ratna Paramita, M.Psi., Psikolog',
-    gender: 'P',
-    type: 'psikolog',
-    title: 'Psikolog Klinis',
-    license: 'SIPP: 0000-00-0-1 (contoh)',
-    description:
-      'Kecemasan, depresi, overthinking, trauma, pengelolaan emosi, dan konflik keluarga pada remaja–dewasa.',
-    rating: 4.9,
-    ratingCount: 68,
-    days: [1, 2, 3, 4],
-    hours: [10, 12, 14, 16],
-  },
-  {
-    id: 'h-bagas',
-    name: 'Bagas Wicaksono, M.Psi., Psikolog',
-    gender: 'L',
-    type: 'psikolog',
-    title: 'Psikolog Klinis',
-    license: 'SIPP: 0000-00-0-2 (contoh)',
-    description:
-      'Masalah klinis remaja–dewasa, burnout kerja, adiksi gawai, serta isu seputar pasangan dan pengasuhan.',
-    rating: 4.8,
-    ratingCount: 41,
-    days: [2, 4, 6],
-    hours: [9, 13, 19, 20],
-  },
-  {
-    id: 'h-dinda',
-    name: 'Dinda Larasati, M.Psi., Psikolog',
-    gender: 'P',
-    type: 'psikolog',
-    title: 'Psikolog Pendidikan',
-    license: 'SIPP: 0000-00-0-3 (contoh)',
-    description:
-      'Kesulitan belajar, minat bakat, kecemasan akademik, dan pendampingan orang tua anak usia sekolah.',
-    rating: 5,
-    ratingCount: 23,
-    days: [1, 3, 5],
-    hours: [15, 16, 19],
-  },
-  {
-    id: 'h-salma',
-    name: 'Salma Nuraini, S.Psi',
-    gender: 'P',
-    type: 'peer',
-    title: 'Peer-Counselor',
-    description:
-      'Keluhan seputar diri, kecemasan, pengelolaan emosi, pengembangan diri, dan quarter life crisis.',
-    rating: 4.9,
-    ratingCount: 17,
-    days: [1, 2, 3, 4, 5],
-    hours: [19, 20, 21],
-  },
-  {
-    id: 'h-fajar',
-    name: 'Fajar Ramadhan, S.Psi',
-    gender: 'L',
-    type: 'peer',
-    title: 'Peer-Counselor',
-    description:
-      'Isu pribadi dan akademik, hubungan pertemanan, stres perkuliahan, dan adaptasi di dunia kerja.',
-    rating: 4.7,
-    ratingCount: 9,
-    days: [0, 3, 6],
-    hours: [8, 9, 20, 21],
-  },
-  {
-    id: 'h-yusuf',
-    name: 'Yusuf Hidayat, M.Psi., Psikolog',
-    gender: 'L',
-    type: 'keluarga',
-    title: 'Konselor Pernikahan & Keluarga',
-    license: 'SIPP: 0000-00-0-4 (contoh)',
-    description:
-      'Komunikasi pasangan, konflik rumah tangga, persiapan pranikah, dan pengasuhan bersama.',
-    rating: 4.9,
-    ratingCount: 32,
-    days: [2, 5, 6],
-    hours: [10, 13, 16, 19],
-  },
-  {
-    id: 'h-maya',
-    name: 'Maya Anggraini, M.Psi., Psikolog',
-    gender: 'P',
-    type: 'keluarga',
-    title: 'Konselor Keluarga & Anak',
-    license: 'SIPP: 0000-00-0-5 (contoh)',
-    description:
-      'Pola asuh, tumbuh kembang anak, hubungan orang tua–remaja, dan pemulihan setelah perpisahan.',
-    rating: 4.8,
-    ratingCount: 26,
-    days: [1, 4, 6],
-    hours: [9, 11, 15],
-  },
-]
-
-export const helpers: Helper[] = seeds.map((h) => ({
-  ...h,
-  options: options(h.id),
-}))
-
-// ---- Jadwal -----------------------------------------------------------------
-
-/** Slot yang sudah dipesan (in-memory; hilang saat server restart). */
-export const bookedSlots = new Set<string>()
+// Jadwal dan pendaftaran (disimpan di memori; hilang saat server restart).
+// Harga, jam layanan, dan profil psikolog diatur di shared/utils/site.ts.
 
 export interface Slot {
   id: string
-  time: string
+  time: string // HH:MM WIB
   available: boolean
 }
 export interface ScheduleDay {
@@ -198,28 +11,46 @@ export interface ScheduleDay {
   slots: Slot[]
 }
 
+/** Slot yang sudah dipesan. */
+export const bookedSlots = new Set<string>()
+
 const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
-const DAYS_AHEAD = 14
+const toMin = (hhmm: string) => Number(hhmm.slice(0, 2)) * 60 + Number(hhmm.slice(3, 5))
+const toHHMM = (m: number) => `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`
+
+/** Jam mulai sesi dalam satu hari: sesi 60 menit + jeda, selama masih selesai sebelum jam tutup. */
+function startTimes(from: string, to: string) {
+  const { bufferMinutes } = SITE.availability
+  const out: number[] = []
+  for (let t = toMin(from); t + 60 <= toMin(to); t += 60 + bufferMinutes) out.push(t)
+  return out
+}
 
 /**
- * Jadwal dibangun dari `days` dan `hours` tiap helper di atas.
- * Untuk mengubah jadwal praktik, cukup ubah dua array itu.
- * Slot yang sudah dipesan ditandai penuh.
+ * Jadwal psikolog untuk `windowDays` ke depan, mengikuti jam layanan di site.ts.
+ * Slot yang kurang dari `minNoticeHours` dari sekarang tidak ditampilkan.
  */
-export function buildSchedule(helper: Helper, now = new Date()): ScheduleDay[] {
+export function buildSchedule(now = new Date()): ScheduleDay[] {
+  const { weekday, weekend, minNoticeHours, windowDays } = SITE.availability
+  const pid = SITE.psychologist.id
+  const earliest = now.getTime() + minNoticeHours * 3600_000
   // "wib" adalah Date yang komponen UTC-nya menunjukkan waktu WIB
   const wib = new Date(now.getTime() + WIB_OFFSET_MS)
   const out: ScheduleDay[] = []
-  for (let i = 0; i < DAYS_AHEAD; i++) {
+
+  for (let i = 0; i < windowDays; i++) {
     const d = new Date(Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate() + i))
-    if (!helper.days.includes(d.getUTCDay())) continue
+    const isWeekend = d.getUTCDay() === 0 || d.getUTCDay() === 6
+    const hours = isWeekend ? weekend : weekday
     const date = d.toISOString().slice(0, 10)
-    const slots = helper.hours
-      // hari ini: hanya jam yang masih minimal 1 jam lagi
-      .filter((h) => i > 0 || h > wib.getUTCHours() + 1)
-      .map((h) => {
-        const id = `${helper.id}_${date}_${String(h).padStart(2, '0')}`
-        return { id, time: `${String(h).padStart(2, '0')}:00`, available: !bookedSlots.has(id) }
+
+    const slots = startTimes(hours.from, hours.to)
+      // waktu mulai slot dalam UTC = tanggal WIB + menit - 7 jam
+      .filter((m) => d.getTime() + m * 60_000 - WIB_OFFSET_MS >= earliest)
+      .map((m) => {
+        const time = toHHMM(m)
+        const id = `${pid}_${date}_${time.replace(':', '')}`
+        return { id, time, available: !bookedSlots.has(id) }
       })
     if (slots.length) out.push({ date, slots })
   }
@@ -227,22 +58,17 @@ export function buildSchedule(helper: Helper, now = new Date()): ScheduleDay[] {
 }
 
 export function findSlot(slotId: string) {
-  const helper = helpers.find((h) => slotId.startsWith(h.id + '_'))
-  if (!helper) return null
-  for (const day of buildSchedule(helper)) {
+  for (const day of buildSchedule()) {
     const slot = day.slots.find((s) => s.id === slotId)
-    if (slot) return { helper, date: day.date, slot }
+    if (slot) return { date: day.date, slot }
   }
   return null
 }
 
 // ---- Pendaftaran ------------------------------------------------------------
 
-export const SCREENING_PRICE = 150000
-
 export interface Booking {
   code: string
-  kind: 'konseling' | 'skrining'
   createdAt: string
   total: number
   [key: string]: unknown

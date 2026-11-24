@@ -5,9 +5,9 @@ export default <Partial<Config>>{
   theme: {
     extend: {
       fontFamily: {
-        sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
-        // serif buku yang dekat dengan wordmark "Rena Jiwa"
-        display: ['Literata', 'Georgia', 'serif'],
+        // font sesuai brief dan logo: Inter untuk isi, Lora untuk judul
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        display: ['Lora', 'Georgia', 'serif'],
       },
       colors: {
         // hijau hutan (garis logo) + sage (setengah lingkaran kanan)

@@ -3,7 +3,7 @@
     <header class="sticky top-0 z-40 border-b border-brand-700/10 bg-sand-100/90 backdrop-blur">
       <div class="container-page flex h-[4.5rem] items-center justify-between gap-4">
         <AppLogo />
-        <nav class="hidden items-center gap-7 text-sm font-medium text-brand-700 lg:flex" :aria-label="m.nav.main">
+        <nav class="hidden items-center gap-6 text-sm font-medium text-brand-700 xl:flex" :aria-label="m.nav.main">
           <NuxtLink
             v-for="l in links"
             :key="l.to"
@@ -19,7 +19,7 @@
             {{ m.common.register }}
           </NuxtLink>
           <button
-            class="rounded-lg p-2 text-brand-700 lg:hidden"
+            class="rounded-lg p-2 text-brand-700 xl:hidden"
             :aria-expanded="open"
             :aria-label="m.nav.openMenu"
             @click="open = !open"
@@ -31,7 +31,7 @@
           </button>
         </div>
       </div>
-      <nav v-if="open" class="border-t border-brand-700/10 bg-sand-100 lg:hidden" :aria-label="m.nav.menu">
+      <nav v-if="open" class="border-t border-brand-700/10 bg-sand-100 xl:hidden" :aria-label="m.nav.menu">
         <div class="container-page flex flex-col py-3">
           <NuxtLink
             v-for="l in links"
@@ -68,22 +68,44 @@
           <div>
             <p class="eyebrow !text-accent-300">{{ m.footer.services }}</p>
             <ul class="mt-4 space-y-2.5 text-sm">
-              <li><NuxtLink to="/konseling" class="hover:text-accent-300">{{ m.footer.counseling }}</NuxtLink></li>
-              <li><NuxtLink to="/cek-kesehatan-mental" class="hover:text-accent-300">{{ m.common.checkup }}</NuxtLink></li>
-              <li><NuxtLink to="/jadwal" class="hover:text-accent-300">{{ m.common.schedule }}</NuxtLink></li>
+              <li><NuxtLink to="/#layanan" class="hover:text-accent-300">{{ m.nav.services }}</NuxtLink></li>
+              <li><NuxtLink to="/konseling" class="hover:text-accent-300">{{ m.common.register }}</NuxtLink></li>
+              <li><NuxtLink to="/cek-kesehatan-mental" class="hover:text-accent-300">{{ m.nav.checkup }}</NuxtLink></li>
+              <li><NuxtLink to="/#faq" class="hover:text-accent-300">{{ m.nav.faq }}</NuxtLink></li>
             </ul>
           </div>
           <div>
             <p class="eyebrow !text-accent-300">{{ m.footer.contact }}</p>
             <ul class="mt-4 space-y-2.5 text-sm text-sand-100/85">
-              <li>WhatsApp: {{ wa }}</li>
-              <li>halo@renajiwa.id</li>
-              <li>{{ m.footer.hours }}</li>
+              <li>
+                <a :href="`https://wa.me/${SITE.contact.whatsapp}`" target="_blank" rel="noopener" class="hover:text-accent-300">
+                  WhatsApp {{ SITE.contact.whatsappDisplay }}
+                </a>
+              </li>
+              <li><a :href="`mailto:${SITE.brand.email}`" class="hover:text-accent-300">{{ SITE.brand.email }}</a></li>
+              <li>
+                <a :href="`https://instagram.com/${SITE.brand.instagram.slice(1)}`" target="_blank" rel="noopener" class="hover:text-accent-300">
+                  Instagram {{ SITE.brand.instagram }}
+                </a>
+              </li>
+            </ul>
+            <p class="eyebrow mt-8 !text-accent-300">{{ m.footer.legal }}</p>
+            <ul class="mt-4 space-y-2.5 text-sm">
+              <li><NuxtLink to="/kebijakan-privasi" class="hover:text-accent-300">{{ m.footer.privacy }}</NuxtLink></li>
+              <li><NuxtLink to="/syarat-layanan" class="hover:text-accent-300">{{ m.footer.terms }}</NuxtLink></li>
             </ul>
           </div>
-          <div class="rounded-xl border border-sand-100/20 p-5 text-sm leading-relaxed sm:col-span-2">
+
+          <!-- Keadaan darurat (wajib, brief bagian 10) -->
+          <div id="darurat" class="rounded-xl border border-sand-100/20 p-5 text-sm leading-relaxed sm:col-span-2">
             <p class="font-display text-lg">{{ m.footer.emergencyTitle }}</p>
             <p class="mt-1.5 text-sand-100/80">{{ m.footer.emergencyText }}</p>
+            <dl class="mt-4 grid grid-cols-2 gap-x-6 gap-y-1.5 text-sand-100/90">
+              <div v-for="e in SITE.emergency" :key="e.country" class="flex justify-between gap-3 border-b border-sand-100/10 py-1">
+                <dt class="text-sand-100/70">{{ lang === 'en' ? e.countryEn : e.country }}</dt>
+                <dd class="text-right font-semibold">{{ e.number }}</dd>
+              </div>
+            </dl>
           </div>
         </div>
       </div>
@@ -95,14 +117,16 @@
 </template>
 
 <script setup lang="ts">
-const { m } = useLocale()
+const { m, lang } = useLocale()
 const open = ref(false)
-const wa = useRuntimeConfig().public.whatsappNumber
 const links = computed(() => [
   { to: '/#layanan', label: m.value.nav.services },
-  { to: '/#helper', label: m.value.nav.helpers },
-  { to: '/#cek', label: m.value.nav.checkup },
-  { to: '/#profil', label: m.value.nav.profile },
-  { to: '/jadwal', label: m.value.nav.schedule },
+  { to: '/#cara-kerja', label: m.value.nav.how },
+  { to: '/cek-kesehatan-mental', label: m.value.nav.checkup },
+  { to: '/#tentang', label: m.value.nav.about },
+  { to: '/#faq', label: m.value.nav.faq },
+  { to: '#kontak', label: m.value.nav.contact },
+  // menu jadwal per psikolog disembunyikan sampai ada psikolog mitra
+  ...(SITE.featureFlags.showPsychologistPicker ? [{ to: '/jadwal', label: m.value.nav.schedule }] : []),
 ])
 </script>
