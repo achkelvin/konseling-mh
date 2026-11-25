@@ -1,77 +1,114 @@
+/**
+ * Pendaftaran sesi: Chat, Voice Call, Video Call, atau MHCU + konsul hasil.
+ * Offline (Jakarta) tidak bisa dipesan di sini — by request lewat WhatsApp admin.
+ */
 export default defineEventHandler(async (event) => {
   const body = await readBody(event)
   const fail = (statusCode: number, statusMessage: string) =>
     createError({ statusCode, statusMessage, message: statusMessage })
 
-  const personError = validatePerson(body?.person)
-  if (personError) throw fail(400, personError)
-  if (typeof body.story !== 'string' || body.story.trim().length < 20)
-    throw fail(400, 'Ceritakan permasalahanmu minimal 20 karakter.')
-  if (body.consent !== true) throw fail(400, 'Persetujuan layanan wajib dicentang.')
+  const lang = toLang(body?.lang)
+  const service = serviceById(body?.serviceId)
+  if (!service) throw fail(400, errorText('service', lang))
+  if (!service.bookable) throw fail(400, errorText('notBookable', lang))
 
-  const found = typeof body.slotId === 'string' ? findSlot(body.slotId) : null
-  if (!found) throw fail(400, 'Jadwal tidak ditemukan.')
-  const option = found.helper.options.find((o) => o.id === body.optionId)
-  if (!option) throw fail(400, 'Metode konseling tidak valid.')
-  if (!found.slot.available)
-    throw fail(409, 'Jadwal ini baru saja dipesan orang lain. Silakan pilih jadwal lain.')
+  const invalid = personError(body?.person, lang)
+  if (invalid) throw fail(400, invalid)
+  const person = cleanPerson(body.person)
+  const minor = isMinor(person.birthDate)
+  if (minor && body.guardianConsent !== true) throw fail(400, errorText('guardianConsent', lang))
+  if (body.consent !== true) throw fail(400, errorText('consent', lang))
 
-  bookedSlots.add(found.slot.id)
-  const code = newCode('KS')
-  const person = body.person
-  const topics: string[] = Array.isArray(body.topics) ? body.topics.slice(0, 10).map(String) : []
-  const schedule = `${tanggal(found.date)}, ${found.slot.time} WIB`
+  // Jadwal: dari Cal.com (bila dipakai) atau dari pemilih jadwal bawaan
+  const cal = body.cal && typeof body.cal === 'object' ? body.cal : null
+  let found: { date: string; slot: { id: string; time: string; available: boolean } } | null = null
+  if (cal) {
+    const start = typeof cal.startTime === 'string' ? new Date(cal.startTime) : null
+    if (typeof cal.uid !== 'string' || !cal.uid || !start || Number.isNaN(start.getTime()) || start.getTime() < Date.now())
+      throw fail(400, errorText('slot', lang))
+    // tampilkan dalam WIB, sama seperti jadwal bawaan
+    const wib = new Date(start.getTime() + 7 * 3600_000).toISOString()
+    found = { date: wib.slice(0, 10), slot: { id: `cal_${cal.uid}`, time: wib.slice(11, 16), available: true } }
+  } else {
+    found = typeof body.slotId === 'string' ? findSlot(body.slotId) : null
+    if (!found) throw fail(400, errorText('slot', lang))
+    if (!found.slot.available) throw fail(409, errorText('taken', lang))
+  }
 
+  const price = priceFor(service.id, person.discount, minor)
+  const topics: string[] = Array.isArray(body.topics)
+    ? body.topics.filter((t: unknown) => TOPICS.includes(t as any)).slice(0, TOPICS.length)
+    : []
+
+  if (!cal) bookedSlots.add(found.slot.id)
+  const code = newCode(service.id === 'mhcu' ? 'CK' : 'KS')
   bookings.set(code, {
     code,
-    kind: 'konseling',
     createdAt: new Date().toISOString(),
-    total: option.price,
-    helperId: found.helper.id,
-    slotId: found.slot.id,
-    optionId: option.id,
+    total: price.total,
+    serviceId: service.id,
+    slotId: cal ? null : found.slot.id,
+    calUid: cal?.uid ?? null,
+    calStatus: cal?.status ?? null,
+    discount: price.discountApplied,
     person,
     topics,
-    story: body.story.trim(),
   })
 
-  const qr = await paymentQr(option.price)
-  const summary: [string, unknown][] = [
-    ['Helper', found.helper.name],
-    ['Jadwal', schedule],
-    ['Metode', `${option.label} · ${option.durationMinutes} menit`],
-    ['Total', rupiah(option.price)],
-  ]
+  const schedule = `${tanggal(found.date)}, ${found.slot.time} WIB`
+  const discountNote = price.discountApplied
+    ? ` (diskon ${price.discountApplied === 'student' ? 'pelajar/mahasiswa' : 'diaspora'} 10% dari ${rupiah(price.base)} — cek bukti via WhatsApp)`
+    : person.discount !== 'none'
+      ? ' (diskon diminta tetapi tidak berlaku untuk layanan/usia ini)'
+      : ''
+
   const emailSent = await notify({
     code,
     person,
-    total: option.price,
-    qr,
-    adminSubject: `[Konseling] ${code} — ${person.name} — ${schedule}`,
+    total: price.total,
+    adminSubject: `[${service.name}] ${code} — ${person.fullName} — ${schedule}`,
     adminRows: [
       ['Kode', code],
-      ...summary,
-      ['Nama', person.name],
-      ['WhatsApp', person.whatsapp],
-      ['Email', person.email],
-      ['Usia', person.age],
-      ['Jenis kelamin', person.gender === 'L' ? 'Laki-laki' : person.gender === 'P' ? 'Perempuan' : '-'],
+      ['Layanan', `${service.name} · ${service.minutes} menit`],
+      ['Psikolog', SITE.psychologist.name],
+      ['Jadwal', schedule],
+      ...(cal
+        ? ([['Cal.com', `booking ${cal.uid}${cal.status ? ` (${cal.status})` : ''}${cal.paymentRequired ? ' · bayar PayPal di Cal.com' : ''} — konfirmasi di dashboard Cal.com`]] as [string, unknown][])
+        : []),
+      ['Total', rupiah(price.total) + discountNote],
+      ...personRows(person),
       ['Topik', topics.join(', ') || '-'],
-      ['Cerita', body.story.trim()],
     ],
-    clientSubject: `Pendaftaran konseling ${code} — menunggu pembayaran`,
-    clientRows: summary,
+    clientSubject:
+      lang === 'en'
+        ? `Registration ${code} — awaiting payment`
+        : `Pendaftaran ${code} — menunggu pembayaran`,
+    clientRows:
+      lang === 'en'
+        ? [
+            ['Service', `${service.id === 'mhcu' ? 'MHCU + results session' : service.name} · ${service.minutes} min`],
+            ['Time', `${tanggal(found.date, 'en')}, ${found.slot.time} WIB`],
+            ['Total', rupiah(price.total)],
+          ]
+        : [
+            ['Layanan', `${service.name} · ${service.minutes} menit`],
+            ['Jadwal', schedule],
+            ['Total', rupiah(price.total)],
+          ],
+    lang,
+    paidOnline: !!cal?.paymentRequired,
   })
 
   return {
     code,
-    total: option.price,
-    helperName: found.helper.name,
+    total: price.total,
+    base: price.base,
+    discountApplied: price.discountApplied,
+    serviceId: service.id,
     date: found.date,
     time: found.slot.time,
-    method: option.label,
-    qr: qr.dataUrl,
-    qrDemo: qr.demo,
     emailSent,
+    // dibayar lewat PayPal di Cal.com: jangan minta transfer lagi
+    paidOnline: !!cal?.paymentRequired,
   }
 })

@@ -1,8 +1,8 @@
 export const rupiah = (n: number) => 'Rp' + n.toLocaleString('id-ID')
 
-/** "2026-11-17" -> "Selasa, 17 November 2026" */
-export const tanggal = (date: string) =>
-  new Date(date + 'T00:00:00Z').toLocaleDateString('id-ID', {
+/** "2026-11-17" -> "Selasa, 17 November 2026" (atau "Tuesday, 17 November 2026" untuk en) */
+export const tanggal = (date: string, lang: 'id' | 'en' = 'id') =>
+  new Date(date + 'T00:00:00Z').toLocaleDateString(lang === 'en' ? 'en-GB' : 'id-ID', {
     weekday: 'long',
     day: 'numeric',
     month: 'long',

@@ -1,75 +1,29 @@
-# Nuxt Content Starter
+# Rena Jiwa
 
-Look at the [Nuxt Content documentation](https://content.nuxt.com) to learn more.
+*Awal baru dimulai dari bercerita.* Situs konsultasi psikologi online Rena Jiwa (Nuxt 4 + Tailwind).
 
-## Setup
+- Konten dan aturan bisnis: `contents/RenaJiwa_Brief_Website.md`, teks legal: `contents/RenaJiwa_Draf_Legal.md`
+- Harga, layanan, diskon, kontak, jam layanan, Cal.com, dan feature flag: `shared/utils/site.ts`
+- Teks antarmuka (Indonesia/Inggris): `app/locales/id.ts`, `app/locales/en.ts`
+- Logo: `contents/RenaJiwa_Logo_Pack` (salinan untuk web di `public/brand`)
 
-Make sure to install dependencies:
+## Menjalankan
 
 ```bash
-# npm
 npm install
-
-# pnpm
-pnpm install
-
-# yarn
-yarn install
-
-# bun
-bun install
+npm run dev        # http://localhost:3000
 ```
 
-## Development Server
+Salin `.env.example` menjadi `.env` untuk SMTP (email formulir) dan pengaturan lain. Tanpa SMTP, email
+disimpan sebagai file HTML di `.outbox/`.
 
-Start the development server on `http://localhost:3000`:
+## Deploy ke Vercel
 
-```bash
-# npm
-npm run dev
+1. Import repo ini di vercel.com → New Project. Framework: Nuxt (terdeteksi otomatis).
+2. Isi Environment Variables dari `.env.example` (minimal `NUXT_SMTP_*`).
+3. Analytics: tab **Analytics → Enable** di dashboard proyek.
+4. Alamat gratis: **Settings → Domains → Add** lalu ketik `renajiwa.vercel.app` (jika masih tersedia).
+   Jika memakai alamat lain, ubah `SITE.brand.siteUrl` di `shared/utils/site.ts`.
 
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
-
-```bash
-# npm
-npm run build
-
-# pnpm
-pnpm build
-
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Catatan brief: sebagian ISP di Türkiye dilaporkan memblokir `*.vercel.app`, jadi siapkan juga domain
+sendiri (usulan: `renajiwa.my.id`) dan/atau deploy kedua (mis. GitHub Pages / Netlify).

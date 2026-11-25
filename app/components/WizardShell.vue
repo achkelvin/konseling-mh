@@ -4,8 +4,11 @@
       class="mx-auto flex min-h-screen max-w-5xl flex-col overflow-hidden bg-white sm:min-h-[calc(100vh-3rem)] sm:rounded-3xl sm:shadow-soft md:flex-row"
     >
       <aside class="flex flex-col border-b border-sand-200 bg-sand-50 p-5 md:w-64 md:border-b-0 md:border-r md:p-6">
-        <AppLogo />
-        <p class="eyebrow mt-6 hidden md:block">Pendaftaran</p>
+        <div class="flex items-center justify-between gap-2">
+          <AppLogo />
+          <LangSwitch class="md:hidden" />
+        </div>
+        <p class="eyebrow mt-6 hidden md:block">{{ m.wizard.registration }}</p>
         <p class="hidden font-semibold md:block">{{ title }}</p>
         <ol class="mt-4 flex gap-1 overflow-x-auto md:flex-col md:gap-1.5">
           <li
@@ -30,9 +33,10 @@
             <span :class="i + 1 === current ? '' : 'hidden md:inline'">{{ s }}</span>
           </li>
         </ol>
-        <NuxtLink to="/" class="mt-auto hidden pt-6 text-sm text-ink/60 hover:text-brand-600 md:block">
-          ← Kembali ke beranda
-        </NuxtLink>
+        <div class="mt-auto hidden space-y-4 pt-6 md:block">
+          <LangSwitch align="left" />
+          <NuxtLink to="/" class="block text-sm text-ink/60 hover:text-brand-600">← {{ m.common.backHome }}</NuxtLink>
+        </div>
       </aside>
 
       <section class="flex flex-1 flex-col">
@@ -43,11 +47,11 @@
           v-if="!hideFooter"
           class="sticky bottom-0 flex items-center justify-between gap-3 border-t border-sand-200 bg-white/95 p-4 backdrop-blur sm:px-8"
         >
-          <button v-if="current > 1" class="btn-ghost" type="button" @click="$emit('back')">Kembali</button>
-          <NuxtLink v-else to="/" class="btn-ghost md:invisible">Beranda</NuxtLink>
+          <button v-if="current > 1" class="btn-ghost" type="button" @click="$emit('back')">{{ m.common.back }}</button>
+          <NuxtLink v-else to="/" class="btn-ghost md:invisible">{{ m.common.home }}</NuxtLink>
           <p v-if="error" class="flex-1 text-right text-sm text-red-600" role="alert">{{ error }}</p>
-          <button class="btn-primary min-w-32" type="button" :disabled="!canNext || busy" @click="$emit('next')">
-            {{ busy ? 'Memproses…' : current === steps.length ? submitLabel : 'Lanjut' }}
+          <button v-if="!hideNext" class="btn-primary min-w-32" type="button" :disabled="!canNext || busy" @click="$emit('next')">
+            {{ busy ? m.common.processing : current === steps.length ? submitLabel : m.common.next }}
           </button>
         </div>
       </section>
@@ -65,6 +69,9 @@ defineProps<{
   error?: string
   submitLabel: string
   hideFooter?: boolean
+  /** sembunyikan tombol Lanjut/Kirim (mis. saat Cal.com yang menyelesaikan pemesanan) */
+  hideNext?: boolean
 }>()
 defineEmits<{ back: []; next: [] }>()
+const { m } = useLocale()
 </script>

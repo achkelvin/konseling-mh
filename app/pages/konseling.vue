@@ -1,13 +1,14 @@
 <template>
   <WizardShell
-    title="Daftar Konseling"
-    :steps="steps"
+    :title="m.konseling.title"
+    :steps="calMode ? m.konseling.stepsCal : m.konseling.steps"
     :current="step"
     :can-next="canNext"
     :busy="busy"
     :error="error"
-    submit-label="Kirim & Bayar"
+    :submit-label="m.common.submit"
     :hide-footer="!!result"
+    :hide-next="calMode && step === 3"
     @back="back"
     @next="next"
   >
@@ -15,251 +16,280 @@
       v-if="result"
       :code="result.code"
       :total="result.total"
-      :qr="result.qr"
-      :qr-demo="result.qrDemo"
       :email="form.person.email"
       :email-sent="result.emailSent"
+      :paid-online="result.paidOnline"
       :rows="[
-        ['Helper', result.helperName],
-        ['Jadwal', `${tanggal(result.date)}, ${result.time} WIB`],
-        ['Metode', result.method],
+        [m.konseling.rowService, m.services[result.serviceId as ServiceId].name],
+        [m.konseling.rowSchedule, `${date(result.date)}, ${result.time} WIB`],
       ]"
     />
 
-    <!-- 1. Helper & jadwal -->
+    <!-- 1. Layanan & jadwal -->
     <div v-else-if="step === 1">
-      <h1 class="text-2xl font-bold">Pilih Helper & Jadwal</h1>
-      <p class="mt-2 text-sm text-ink/70">Semua waktu dalam WIB.</p>
+      <h1 class="text-2xl font-medium text-brand-700">{{ m.konseling.pickTitle }}</h1>
+      <!-- Satu psikolog: pilihan helper disembunyikan (flag showPsychologistPicker) -->
+      <p class="mt-2 flex items-center gap-2 text-sm text-ink/70">
+        <img src="/brand/icon.svg" alt="" class="h-6 w-6 rounded-md" />
+        {{ SITE.psychologist.name }}
+      </p>
 
-      <div class="mt-5 flex flex-wrap gap-2" role="radiogroup" aria-label="Jenis layanan">
-        <button
-          v-for="s in data?.services"
-          :key="s.id"
-          type="button"
-          role="radio"
-          :aria-checked="form.type === s.id"
-          class="rounded-full border px-4 py-1.5 text-sm font-medium transition"
-          :class="form.type === s.id ? 'border-brand-600 bg-brand-600 text-white' : 'border-sand-200 hover:border-brand-200'"
-          @click="pickType(s.id)"
-        >
-          {{ s.label }}
-        </button>
-      </div>
-
-      <div class="mt-5 space-y-3" role="radiogroup" aria-label="Helper">
-        <button
-          v-for="h in typeHelpers"
-          :key="h.id"
-          type="button"
-          role="radio"
-          :aria-checked="form.helperId === h.id"
-          class="flex w-full items-center gap-4 rounded-2xl border p-4 text-left transition"
-          :class="form.helperId === h.id ? 'border-brand-600 bg-brand-50 ring-1 ring-brand-600' : 'border-sand-200 hover:border-brand-200'"
-          @click="pickHelper(h.id)"
-        >
-          <HelperAvatar :name="h.name" />
-          <span class="flex-1">
-            <span class="block text-sm font-semibold">{{ h.name }}</span>
-            <span class="block text-xs text-ink/60">{{ h.title }}</span>
-          </span>
-          <span class="text-xs text-ink/60">{{ h.availableSlotCount }} slot</span>
-        </button>
-      </div>
-
-      <template v-if="helper">
-        <h2 class="mt-8 text-sm font-semibold">Metode konseling</h2>
-        <div class="mt-2 flex flex-wrap gap-2" role="radiogroup" aria-label="Metode konseling">
+      <fieldset class="mt-6">
+        <legend class="label">{{ m.konseling.serviceType }}</legend>
+        <div class="grid gap-3 sm:grid-cols-2" role="radiogroup" :aria-label="m.konseling.serviceType">
           <button
-            v-for="o in helper.options"
-            :key="o.id"
+            v-for="s in bookable"
+            :key="s.id"
             type="button"
             role="radio"
-            :aria-checked="form.optionId === o.id"
-            class="rounded-xl border px-4 py-2.5 text-left text-sm transition"
-            :class="form.optionId === o.id ? 'border-brand-600 bg-brand-600 text-white' : 'border-sand-200 hover:border-brand-200'"
-            @click="form.optionId = o.id"
+            :aria-checked="form.serviceId === s.id"
+            class="flex items-start justify-between gap-4 rounded-xl border p-4 text-left transition"
+            :class="form.serviceId === s.id ? 'border-brand-700 bg-brand-50 ring-1 ring-brand-700' : 'border-sand-300 bg-white hover:border-brand-300'"
+            @click="form.serviceId = s.id"
           >
-            <span class="block font-semibold">{{ o.label }}</span>
-            <span class="text-xs opacity-80">{{ rupiah(o.price) }} / {{ o.durationMinutes }} menit</span>
+            <span>
+              <span class="block font-semibold text-brand-700">{{ m.services[s.id].name }}</span>
+              <span class="mt-0.5 block text-xs leading-relaxed text-ink/60">{{ m.services[s.id].desc }}</span>
+              <span v-if="s.id === 'mhcu'" class="mt-1.5 inline-block rounded-full bg-accent-50 px-2 py-0.5 text-[11px] font-semibold text-accent-700">
+                {{ m.common.notDiagnosis }} · {{ m.common.noDiscount }}
+              </span>
+            </span>
+            <span class="shrink-0 text-right">
+              <span class="block font-semibold">{{ rupiah(s.priceIDR) }}</span>
+              <span class="text-xs text-ink/55">{{ s.minutes }} {{ m.common.minutes }}</span>
+            </span>
           </button>
         </div>
 
-        <h2 class="mt-8 text-sm font-semibold">Jadwal tersedia</h2>
-        <p v-if="!helper.schedules.length" class="mt-2 text-sm text-ink/60">Belum ada jadwal untuk helper ini.</p>
-        <div v-for="d in helper.schedules" :key="d.date" class="mt-4">
-          <h3 class="text-xs font-medium text-ink/60">{{ tanggal(d.date) }}</h3>
-          <div class="mt-1.5 flex flex-wrap gap-2">
-            <button
-              v-for="s in d.slots"
-              :key="s.id"
-              type="button"
-              :disabled="!s.available"
-              :aria-pressed="form.slotId === s.id"
-              class="rounded-full border px-3.5 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:text-ink/30 disabled:line-through"
-              :class="form.slotId === s.id ? 'border-accent-500 bg-accent-500 text-white' : 'border-sand-200 enabled:hover:border-brand-500'"
-              @click="form.slotId = s.id"
-            >
-              {{ s.time }}
-            </button>
-          </div>
+        <!-- Offline: by request, tidak dipesan langsung -->
+        <div
+          v-if="SITE.featureFlags.offlineEnabled"
+          class="mt-3 flex flex-col gap-3 rounded-xl border border-dashed border-brand-700/30 p-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <span>
+            <span class="flex items-center gap-2 font-semibold text-brand-700">
+              {{ m.services.offline.name }}
+              <span class="rounded-full bg-brand-100 px-2 py-0.5 text-[11px] font-semibold">{{ m.home.byRequest }}</span>
+            </span>
+            <span class="mt-0.5 block text-xs text-ink/60">{{ rupiah(offline!.priceIDR) }} · {{ m.konseling.offlineNote }}</span>
+          </span>
+          <a :href="waLink(m.home.offlineWa)" target="_blank" rel="noopener" class="btn-ghost shrink-0 !py-2">
+            <WhatsAppIcon class="h-4 w-4" /> {{ m.common.askAdmin }}
+          </a>
         </div>
+      </fieldset>
+
+      <template v-if="!calMode">
+      <h2 class="mt-8 font-sans text-sm font-semibold">{{ m.konseling.available }}</h2>
+      <p class="mt-1 text-xs text-ink/55">{{ m.konseling.tzNote }}</p>
+      <p v-if="!days.length" class="mt-3 text-sm text-ink/60">{{ m.konseling.noSchedule }}</p>
+      <div v-for="d in shownDays" :key="d.date" class="mt-4">
+        <h3 class="font-sans text-xs font-medium text-ink/60">{{ date(d.date) }}</h3>
+        <div class="mt-1.5 flex flex-wrap gap-2">
+          <button
+            v-for="s in d.slots"
+            :key="s.id"
+            type="button"
+            :disabled="!s.available"
+            :aria-pressed="form.slotId === s.id"
+            class="rounded-lg border px-3 py-1.5 text-sm font-medium transition disabled:cursor-not-allowed disabled:text-ink/30 disabled:line-through"
+            :class="form.slotId === s.id ? 'border-accent-600 bg-accent-600 text-white' : 'border-sand-300 bg-white enabled:hover:border-brand-500'"
+            @click="form.slotId = s.id"
+          >
+            {{ s.time }}
+            <span v-if="localTime(d.date, s.time)" class="ml-1 text-[11px] font-normal opacity-75">
+              ({{ localTime(d.date, s.time) }} {{ m.konseling.local }})
+            </span>
+          </button>
+        </div>
+      </div>
+      <button v-if="days.length > shownDays.length" type="button" class="mt-5 text-sm font-semibold text-accent-600 underline underline-offset-4" @click="dayLimit += 7">
+        +7 {{ lang === 'en' ? 'more days' : 'hari berikutnya' }}
+      </button>
       </template>
     </div>
 
     <!-- 2. Formulir -->
     <div v-else-if="step === 2">
-      <h1 class="text-2xl font-bold">Data Diri & Cerita</h1>
-      <p class="mb-6 mt-2 text-sm text-ink/70">Formulir ini dikirim ke email admin dan hanya dipakai untuk keperluan sesi.</p>
-      <PersonFields v-model="form.person" v-model:valid="personValid" />
+      <h1 class="text-2xl font-medium text-brand-700">{{ m.konseling.formTitle }}</h1>
+      <p class="mt-2 text-sm text-ink/70">{{ m.konseling.formLead }}</p>
+      <p class="mb-6 mt-3 rounded-lg bg-accent-50 px-4 py-3 text-sm text-accent-700">{{ m.konseling.noDetail }}</p>
+      <PersonFields v-model="form.person" v-model:valid="personValid" :service-id="form.serviceId" />
 
       <fieldset class="mt-6">
-        <legend class="label">Topik (boleh lebih dari satu)</legend>
+        <legend class="label">{{ m.konseling.topicsLegend }}</legend>
         <div class="flex flex-wrap gap-2">
           <label
-            v-for="t in topics"
+            v-for="(t, i) in TOPICS"
             :key="t"
-            class="cursor-pointer rounded-full border px-3.5 py-1.5 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-brand-500"
-            :class="form.topics.includes(t) ? 'border-brand-600 bg-brand-600 text-white' : 'border-sand-200 hover:border-brand-200'"
+            class="cursor-pointer rounded-full border px-3.5 py-1.5 text-sm transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent-500"
+            :class="form.topics.includes(t) ? 'border-brand-700 bg-brand-700 text-sand-50' : 'border-sand-300 bg-white hover:border-brand-300'"
           >
             <input v-model="form.topics" type="checkbox" :value="t" class="sr-only" />
-            {{ t }}
+            {{ m.konseling.topics[i] }}
           </label>
         </div>
       </fieldset>
 
-      <label class="label mt-6" for="story">Ceritakan singkat permasalahanmu</label>
-      <textarea
-        id="story"
-        v-model="form.story"
-        class="field min-h-32"
-        maxlength="2000"
-        placeholder="Apa yang sedang kamu rasakan atau hadapi?"
-      />
-      <p class="mt-1 text-xs" :class="form.story.trim().length < 20 ? 'text-ink/50' : 'text-brand-600'">
-        {{ form.story.trim().length }}/2000 · minimal 20 karakter
-      </p>
-
-      <label class="mt-6 flex cursor-pointer items-start gap-3 rounded-2xl bg-sand-50 p-4 text-sm">
-        <input v-model="form.consent" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-600" />
+      <label v-if="minor" class="mt-6 flex cursor-pointer items-start gap-3 rounded-xl bg-brand-50 p-4 text-sm">
+        <input v-model="form.guardianConsent" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-700" />
+        <span>{{ m.konseling.guardianConsent }}</span>
+      </label>
+      <label class="mt-3 flex cursor-pointer items-start gap-3 rounded-xl bg-sand-50 p-4 text-sm">
+        <input v-model="form.consent" type="checkbox" class="mt-0.5 h-4 w-4 accent-brand-700" />
         <span>
-          Saya menyetujui ketentuan layanan dan memahami bahwa layanan ini bukan layanan gawat
-          darurat.
+          {{ m.konseling.consentA }}
+          <NuxtLink to="/kebijakan-privasi" target="_blank" class="font-semibold text-accent-600 underline">{{ m.konseling.consentPrivacy }}</NuxtLink>,
+          <NuxtLink to="/syarat-layanan" target="_blank" class="font-semibold text-accent-600 underline">{{ m.konseling.consentTerms }}</NuxtLink>,
+          <NuxtLink to="/syarat-layanan#persetujuan" target="_blank" class="font-semibold text-accent-600 underline">{{ m.konseling.consentConsent }}</NuxtLink>
+          {{ m.konseling.consentB }}
         </span>
       </label>
     </div>
 
     <!-- 3. Ringkasan -->
     <div v-else>
-      <h1 class="text-2xl font-bold">Ringkasan</h1>
-      <p class="mt-2 text-sm text-ink/70">
-        Periksa kembali. Setelah dikirim, kamu akan mendapat QRIS untuk pembayaran.
-      </p>
-      <dl class="mt-6 divide-y divide-sand-100 rounded-2xl border border-sand-200 text-sm">
+      <h1 class="text-2xl font-medium text-brand-700">{{ m.konseling.summaryTitle }}</h1>
+      <p class="mt-2 text-sm text-ink/70">{{ m.konseling.summaryLead }}</p>
+      <dl class="mt-6 divide-y divide-sand-200 rounded-xl border border-sand-300 bg-white text-sm">
         <div v-for="[k, v] in summary" :key="k" class="flex justify-between gap-6 px-5 py-3">
           <dt class="text-ink/60">{{ k }}</dt>
           <dd class="text-right font-medium">{{ v }}</dd>
         </div>
-        <div class="flex justify-between gap-6 bg-brand-50 px-5 py-4">
-          <dt class="font-semibold">Total</dt>
-          <dd class="text-lg font-extrabold text-brand-700">{{ rupiah(option?.price ?? 0) }}</dd>
+        <div class="flex items-baseline justify-between gap-6 bg-brand-50 px-5 py-4">
+          <dt class="font-semibold">{{ m.common.total }}</dt>
+          <dd class="text-right">
+            <span v-if="price.discountApplied" class="mr-2 text-sm text-ink/45 line-through">{{ rupiah(price.base) }}</span>
+            <span class="text-lg font-semibold text-brand-700">{{ rupiah(price.total) }}</span>
+          </dd>
         </div>
       </dl>
+      <p v-if="form.person.discount !== 'none' && !price.discountApplied" class="mt-3 text-xs text-ink/60">
+        {{ m.konseling.discountNotApplicable }}
+      </p>
+
+      <!-- Cal.com: pilih jadwal di kalender; pemesanan selesai saat booking Cal.com berhasil -->
+      <section v-if="calMode && calLink" class="mt-8">
+        <h2 class="text-xl font-medium text-brand-700">{{ m.konseling.calTitle }}</h2>
+        <p class="mt-1 text-sm text-ink/70">{{ m.konseling.calLead }}</p>
+        <p v-if="abroad && usesIntlEvent" class="mt-2 rounded-lg bg-brand-50 px-4 py-2.5 text-sm text-brand-700">{{ m.konseling.calIntl }}</p>
+        <p v-if="busy" class="mt-3 text-sm font-medium text-brand-700" role="status">{{ m.konseling.calSaving }}</p>
+        <CalEmbed
+          :key="calLink"
+          class="mt-4"
+          :cal-link="calLink"
+          :name="form.person.fullName"
+          :email="form.person.email"
+          :notes="calNotes"
+          :lang="lang"
+          :loading-text="m.konseling.calLoading"
+          :failed-text="m.konseling.calFailed"
+          @booked="onCalBooked"
+        />
+      </section>
     </div>
   </WizardShell>
 </template>
 
 <script setup lang="ts">
-import type { Person } from '~/components/PersonFields.vue'
-
 definePageMeta({ layout: false })
-useHead({ title: 'Daftar Konseling — KonselingMH' })
-
-const steps = ['Helper & Jadwal', 'Formulir', 'Ringkasan & Bayar']
-const topics = ['Kecemasan', 'Stres', 'Keluarga', 'Pasangan', 'Pekerjaan / kuliah', 'Trauma', 'Pengembangan diri', 'Lainnya']
+const { m, date, lang } = useLocale()
+useHead({ title: () => m.value.konseling.pageTitle })
 
 const route = useRoute()
-const { data } = await useFetch('/api/services')
-const { data: helpers, refresh } = await useFetch('/api/helpers')
+const { data: sched, refresh } = await useFetch('/api/schedule')
+
+const bookable = SITE.services.filter((s) => s.bookable)
+// Cal.com aktif bila username diisi di shared/utils/site.ts
+const calMode = calEnabled()
+const offline = serviceById('offline')
 
 const step = ref(1)
 const busy = ref(false)
 const error = ref('')
 const personValid = ref(false)
+const dayLimit = ref(7)
 const result = ref<{
   code: string
   total: number
-  helperName: string
+  serviceId: string
   date: string
   time: string
-  method: string
-  qr: string
-  qrDemo: boolean
   emailSent: boolean
+  paidOnline?: boolean
 } | null>(null)
 
+// ?service=video dari tombol "Pesan" di beranda
+const preset = bookable.find((s) => s.id === route.query.service)
 const form = reactive({
-  type: 'psikolog',
-  helperId: '',
-  optionId: '',
+  serviceId: (preset?.id ?? 'chat') as ServiceId,
   slotId: '',
-  person: { name: '', whatsapp: '', email: '', age: null, gender: '' } as Person,
+  person: emptyPerson(),
   topics: [] as string[],
-  story: '',
   consent: false,
+  guardianConsent: false,
 })
 
-const typeHelpers = computed(() => helpers.value?.filter((h) => h.type === form.type) ?? [])
-const helper = computed(() => helpers.value?.find((h) => h.id === form.helperId))
-const option = computed(() => helper.value?.options.find((o) => o.id === form.optionId))
+const days = computed(() => sched.value?.schedules ?? [])
+const shownDays = computed(() => days.value.slice(0, dayLimit.value))
 const slot = computed(() => {
-  for (const d of helper.value?.schedules ?? []) {
+  for (const d of days.value) {
     const s = d.slots.find((x) => x.id === form.slotId)
     if (s) return { date: d.date, ...s }
   }
 })
+const minor = computed(() => isMinor(form.person.birthDate))
+const price = computed(() => priceFor(form.serviceId, form.person.discount, minor.value))
+const abroad = computed(() => isAbroad(form.person.country))
+const calLink = computed(() => calLinkFor(form.serviceId, abroad.value))
+const usesIntlEvent = computed(() => !!SITE.cal.intlEvents[form.serviceId])
+// catatan untuk admin di Cal.com (tanpa cerita detail)
+const calNotes = computed(() =>
+  [
+    `${form.person.whatsapp} · ${form.person.city}, ${form.person.country}`,
+    form.topics.length ? `Topik: ${form.topics.join(', ')}` : '',
+    price.value.discountApplied ? `Diskon ${price.value.discountApplied} (cek bukti)` : '',
+  ]
+    .filter(Boolean)
+    .join(' — '),
+)
 
-function pickType(id: string) {
-  if (form.type !== id) pickHelper('')
-  form.type = id
-}
-function pickHelper(id: string) {
-  form.helperId = id
-  form.slotId = ''
-  form.optionId = helpers.value?.find((h) => h.id === id)?.options[0]?.id ?? ''
-}
-
-// Prefill dari tautan (beranda: ?type=…, halaman jadwal: ?helper=…&slot=…)
-const preset = helpers.value?.find((h) => h.id === route.query.helper)
-if (preset) {
-  form.type = preset.type
-  pickHelper(preset.id)
-  const wanted = String(route.query.slot ?? '')
-  if (preset.schedules.some((d) => d.slots.some((s) => s.id === wanted && s.available))) form.slotId = wanted
-} else if (data.value?.services.some((s) => s.id === route.query.type)) {
-  form.type = String(route.query.type)
+/** Jam lokal pemesan bila zona waktunya bukan WIB (brief: deteksi otomatis). */
+const browserOffset = ref<number | null>(null)
+onMounted(() => (browserOffset.value = -new Date().getTimezoneOffset()))
+function localTime(d: string, t: string) {
+  if (browserOffset.value === null || browserOffset.value === 420) return ''
+  const when = new Date(`${d}T${t}:00+07:00`)
+  return when.toLocaleTimeString(lang.value === 'en' ? 'en-GB' : 'id-ID', { hour: '2-digit', minute: '2-digit' })
 }
 
 const canNext = computed(() => {
   switch (step.value) {
     case 1:
-      return !!option.value && !!slot.value?.available
+      return calMode || !!slot.value?.available
     case 2:
-      return personValid.value && form.story.trim().length >= 20 && form.consent
+      return personValid.value && form.consent && (!minor.value || form.guardianConsent)
     default:
       return true
   }
 })
 
-const summary = computed<[string, string][]>(() => [
-  ['Layanan', typeLabel[form.type] ?? '-'],
-  ['Helper', helper.value?.name ?? '-'],
-  ['Jadwal', slot.value ? `${tanggal(slot.value.date)}, ${slot.value.time} WIB` : '-'],
-  ['Metode', option.value ? `${option.value.label} · ${option.value.durationMinutes} menit` : '-'],
-  ['Nama', form.person.name],
-  ['WhatsApp', form.person.whatsapp],
-  ['Email', form.person.email],
-  ['Topik', form.topics.join(', ') || '-'],
-])
+const summary = computed<[string, string][]>(() => {
+  const k = m.value.konseling
+  const s = serviceById(form.serviceId)!
+  const rows: [string, string][] = [
+    [k.rowService, `${m.value.services[s.id].name} · ${s.minutes} ${m.value.common.minutes}`],
+    [k.rowPsychologist, SITE.psychologist.name],
+    ...(calMode ? [] : [[k.rowSchedule, slot.value ? `${date(slot.value.date)}, ${slot.value.time} WIB` : '-'] as [string, string]]),
+    [k.rowName, form.person.nickname || form.person.fullName],
+    ['WhatsApp', form.person.whatsapp],
+    ['Email', form.person.email],
+    [k.rowTopics, form.topics.map((t) => k.topics[TOPICS.indexOf(t as any)] ?? t).join(', ') || '-'],
+  ]
+  if (price.value.discountApplied)
+    rows.push([k.rowDiscount, `${m.value.person.discountNames[price.value.discountApplied]} — ${k.discountPending}`])
+  return rows
+})
 
 function back() {
   error.value = ''
@@ -268,25 +298,35 @@ function back() {
 
 async function next() {
   error.value = ''
-  if (step.value < steps.length) {
+  if (step.value < m.value.konseling.steps.length) {
     step.value++
     return
   }
+  await submit({ slotId: form.slotId })
+}
+
+/** Cal.com melaporkan booking berhasil → simpan pendaftaran dan kirim email. */
+function onCalBooked(cal: { uid: string; startTime: string; endTime?: string; status?: string; paymentRequired?: boolean }) {
+  submit({ cal })
+}
+
+async function submit(when: { slotId?: string; cal?: object }) {
   busy.value = true
   try {
     result.value = await $fetch('/api/bookings', {
       method: 'POST',
       body: {
-        slotId: form.slotId,
-        optionId: form.optionId,
+        serviceId: form.serviceId,
+        ...when,
         person: form.person,
         topics: form.topics,
-        story: form.story,
         consent: form.consent,
+        guardianConsent: form.guardianConsent,
+        lang: lang.value,
       },
     })
   } catch (e: any) {
-    error.value = e?.data?.message ?? 'Pendaftaran gagal dikirim. Coba lagi.'
+    error.value = e?.data?.message ?? m.value.common.sendFailed
     if (e?.statusCode === 409) {
       // slot keburu diambil: muat ulang jadwal dan kembali ke pemilihan slot
       await refresh()
