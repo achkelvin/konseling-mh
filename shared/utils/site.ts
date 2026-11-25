@@ -45,7 +45,7 @@ export const SITE = {
      * Tampilkan nomor rekening di halaman sukses dan email klien.
      * Brief: detail pembayaran TIDAK ditaruh di website (admin mengirim lewat WhatsApp/email).
      */
-    showPaymentDetails: false,
+    showPaymentDetails: true,
   },
   services: [
     { id: 'chat', name: 'Chat', minutes: 60, priceIDR: 75000, bookable: true, discountable: true },

@@ -86,7 +86,7 @@ const en: typeof id = {
     how: [
       { title: 'Choose a service and time', text: 'Times are shown in WIB together with your local time.' },
       { title: 'Fill in a short form', text: 'Just the basics. You tell your story in the session, not in the form.' },
-      { title: 'Pay', text: 'The admin sends the payment details: QRIS or bank transfer, PayPal from abroad.' },
+      { title: 'Pay', text: 'Transfer to the Bank Mandiri account shown after you register. From abroad: PayPal via the admin.' },
       { title: 'Get your confirmation', text: 'The confirmation and session link arrive by WhatsApp or email.' },
       { title: 'Session and follow-up', text: 'A 60-minute session, then a follow-up the next day.' },
     ],
@@ -259,7 +259,7 @@ const en: typeof id = {
     copy: 'Copy',
     copied: 'Copied ✓',
     steps: [
-      'Wait for the payment details from the admin, then pay the exact amount.',
+      'Transfer the exact amount above and put your registration code in the transfer note.',
       'Send your proof of payment with the registration code to the admin on WhatsApp.',
       'The admin confirms your session and sends the session link.',
     ],

@@ -85,7 +85,7 @@ export default {
     how: [
       { title: 'Pilih layanan dan jadwal', text: 'Jam ditampilkan dalam WIB beserta waktu di tempatmu.' },
       { title: 'Isi formulir singkat', text: 'Data dasar saja. Ceritamu disampaikan di sesi, bukan di formulir.' },
-      { title: 'Bayar', text: 'Admin mengirim detail pembayaran: QRIS atau transfer bank, PayPal dari luar negeri.' },
+      { title: 'Bayar', text: 'Transfer ke rekening Bank Mandiri yang tampil setelah mendaftar. Dari luar negeri: PayPal lewat admin.' },
       { title: 'Terima konfirmasi', text: 'Konfirmasi dan link sesi dikirim lewat WhatsApp atau email.' },
       { title: 'Sesi dan tindak lanjut', text: 'Sesi 60 menit, lalu tindak lanjut di hari berikutnya (H+1).' },
     ],
@@ -236,7 +236,7 @@ export default {
     copy: 'Salin',
     copied: 'Tersalin ✓',
     steps: [
-      'Tunggu detail pembayaran dari admin, lalu bayar sesuai jumlah.',
+      'Transfer sesuai jumlah di atas, tulis kode pendaftaran di berita transfer.',
       'Kirim bukti bayar beserta kode pendaftaran ke WhatsApp admin.',
       'Admin mengonfirmasi jadwal dan mengirim link sesi.',
     ],
