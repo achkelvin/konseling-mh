@@ -15,7 +15,7 @@
       <li><b>Data pembayaran:</b> bukti pembayaran yang kamu kirim. Kami tidak menyimpan nomor kartu atau akun bank.</li>
       <li><b>Bukti untuk diskon</b> (identitas pelajar atau domisili luar negeri): hanya <b>diperiksa lalu tidak disimpan</b>. Kami mencatat bahwa diskon terverifikasi dan tanggalnya saja.</li>
       <li><b>Catatan sesi</b> yang dibuat psikolog sesuai kewajiban profesi.</li>
-      <li><b>Data teknis ringan</b> dari analitik situs (halaman yang dibuka, jenis perangkat) tanpa mengidentifikasi kamu secara pribadi.</li>
+      <li><b>Data teknis ringan</b> dari analitik situs (halaman yang dibuka, jenis perangkat) tanpa mengidentifikasi kamu secara pribadi. Kami memakai Vercel Analytics yang tidak memakai cookie.</li>
     </ul>
     <p>Data tentang kesehatan jiwa termasuk <b>data pribadi yang bersifat spesifik</b>, dan kami memperlakukannya dengan tingkat perlindungan lebih tinggi.</p>
 
@@ -34,7 +34,8 @@
 
     <h3>3. Dengan siapa data dibagikan</h3>
     <p>
-      Hanya dengan penyedia layanan yang diperlukan untuk menjalankan layanan: penjadwalan, konferensi video/telepon
+      Hanya dengan penyedia layanan yang diperlukan untuk menjalankan layanan: penjadwalan (Cal.com), hosting dan
+      analitik situs (Vercel), konferensi video/telepon
       (misalnya Google Meet), pembayaran (misalnya PayPal), pesan (WhatsApp), email, dan penyimpanan dokumen berakses
       terbatas. Penyedia ini bisa berada di luar Indonesia, sehingga datamu dapat diproses di luar negeri dengan
       perlindungan yang wajar.

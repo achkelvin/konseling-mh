@@ -22,7 +22,8 @@
     <section class="mt-6 w-full rounded-2xl border border-sand-300 bg-white p-5 text-left" aria-labelledby="pay-title">
       <h2 id="pay-title" class="font-display text-lg font-medium text-brand-700">{{ m.success.payTitle }}</h2>
       <!-- Brief: detail pembayaran tidak ditampilkan di website; admin mengirimnya (flag showPaymentDetails) -->
-      <p v-if="!SITE.featureFlags.showPaymentDetails" class="mt-2 text-sm leading-relaxed text-ink/80">
+      <p v-if="paidOnline" class="mt-2 text-sm leading-relaxed text-ink/80">{{ m.success.paidOnline }}</p>
+      <p v-else-if="!SITE.featureFlags.showPaymentDetails" class="mt-2 text-sm leading-relaxed text-ink/80">
         {{ fmt(m.success.payAdmin, { amount: rupiah(total) }) }}
       </p>
       <template v-else>
@@ -91,6 +92,8 @@ const props = defineProps<{
   total: number
   email: string
   emailSent: boolean
+  /** dibayar lewat PayPal di Cal.com */
+  paidOnline?: boolean
 }>()
 
 const { bank, qrisPayload } = useRuntimeConfig().public

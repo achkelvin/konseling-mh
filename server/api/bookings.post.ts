@@ -19,23 +19,37 @@ export default defineEventHandler(async (event) => {
   if (minor && body.guardianConsent !== true) throw fail(400, errorText('guardianConsent', lang))
   if (body.consent !== true) throw fail(400, errorText('consent', lang))
 
-  const found = typeof body.slotId === 'string' ? findSlot(body.slotId) : null
-  if (!found) throw fail(400, errorText('slot', lang))
-  if (!found.slot.available) throw fail(409, errorText('taken', lang))
+  // Jadwal: dari Cal.com (bila dipakai) atau dari pemilih jadwal bawaan
+  const cal = body.cal && typeof body.cal === 'object' ? body.cal : null
+  let found: { date: string; slot: { id: string; time: string; available: boolean } } | null = null
+  if (cal) {
+    const start = typeof cal.startTime === 'string' ? new Date(cal.startTime) : null
+    if (typeof cal.uid !== 'string' || !cal.uid || !start || Number.isNaN(start.getTime()) || start.getTime() < Date.now())
+      throw fail(400, errorText('slot', lang))
+    // tampilkan dalam WIB, sama seperti jadwal bawaan
+    const wib = new Date(start.getTime() + 7 * 3600_000).toISOString()
+    found = { date: wib.slice(0, 10), slot: { id: `cal_${cal.uid}`, time: wib.slice(11, 16), available: true } }
+  } else {
+    found = typeof body.slotId === 'string' ? findSlot(body.slotId) : null
+    if (!found) throw fail(400, errorText('slot', lang))
+    if (!found.slot.available) throw fail(409, errorText('taken', lang))
+  }
 
   const price = priceFor(service.id, person.discount, minor)
   const topics: string[] = Array.isArray(body.topics)
     ? body.topics.filter((t: unknown) => TOPICS.includes(t as any)).slice(0, TOPICS.length)
     : []
 
-  bookedSlots.add(found.slot.id)
+  if (!cal) bookedSlots.add(found.slot.id)
   const code = newCode(service.id === 'mhcu' ? 'CK' : 'KS')
   bookings.set(code, {
     code,
     createdAt: new Date().toISOString(),
     total: price.total,
     serviceId: service.id,
-    slotId: found.slot.id,
+    slotId: cal ? null : found.slot.id,
+    calUid: cal?.uid ?? null,
+    calStatus: cal?.status ?? null,
     discount: price.discountApplied,
     person,
     topics,
@@ -58,6 +72,9 @@ export default defineEventHandler(async (event) => {
       ['Layanan', `${service.name} · ${service.minutes} menit`],
       ['Psikolog', SITE.psychologist.name],
       ['Jadwal', schedule],
+      ...(cal
+        ? ([['Cal.com', `booking ${cal.uid}${cal.status ? ` (${cal.status})` : ''}${cal.paymentRequired ? ' · bayar PayPal di Cal.com' : ''} — konfirmasi di dashboard Cal.com`]] as [string, unknown][])
+        : []),
       ['Total', rupiah(price.total) + discountNote],
       ...personRows(person),
       ['Topik', topics.join(', ') || '-'],
@@ -79,6 +96,7 @@ export default defineEventHandler(async (event) => {
             ['Total', rupiah(price.total)],
           ],
     lang,
+    paidOnline: !!cal?.paymentRequired,
   })
 
   return {
@@ -90,5 +108,7 @@ export default defineEventHandler(async (event) => {
     date: found.date,
     time: found.slot.time,
     emailSent,
+    // dibayar lewat PayPal di Cal.com: jangan minta transfer lagi
+    paidOnline: !!cal?.paymentRequired,
   }
 })

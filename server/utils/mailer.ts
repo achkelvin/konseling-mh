@@ -81,6 +81,7 @@ const MAIL = {
     hello: (n: string) => `Halo ${n}, pendaftaranmu kami terima`,
     code: 'Kode pendaftaran',
     payTitle: 'Pembayaran',
+    paidOnline: 'Pembayaran PayPal diproses di Cal.com. Admin akan mengonfirmasi jadwalmu setelah pembayaran diterima.',
     adminSends: (a: string, wa: string) =>
       `Total yang perlu dibayar: <b>${a}</b>. Admin akan mengirim detail pembayaran (QRIS atau transfer bank; PayPal untuk luar negeri) lewat WhatsApp atau email, paling lambat 2 jam di jam kerja. Ada pertanyaan? Hubungi admin di WhatsApp <b>${wa}</b>.`,
     reschedule: 'Ganti jadwal gratis jika lebih dari 24 jam sebelum sesi. Kurang dari itu: biaya admin Rp50.000 atau sesi hangus. Layanan ini bukan layanan gawat darurat.',
@@ -94,6 +95,7 @@ const MAIL = {
     hello: (n: string) => `Hi ${n}, we've received your registration`,
     code: 'Registration code',
     payTitle: 'Payment',
+    paidOnline: 'Your PayPal payment is handled in Cal.com. The admin will confirm your session once the payment is received.',
     adminSends: (a: string, wa: string) =>
       `Amount due: <b>${a}</b>. The admin will send the payment details (QRIS or bank transfer; PayPal from abroad) via WhatsApp or email, within 2 hours during working hours. Questions? Contact the admin on WhatsApp <b>${wa}</b>.`,
     reschedule: 'Rescheduling is free more than 24 hours before the session. Within 24 hours: a Rp50,000 admin fee or the session is forfeited. This is not an emergency service.',
@@ -118,10 +120,13 @@ export function clientEmail(opts: {
   bank: { name: string; account: string; holder: string }
   whatsapp: string
   lang: Lang
+  paidOnline?: boolean
 }) {
   const t = MAIL[opts.lang]
   // Brief: nomor rekening/QRIS/PayPal tidak ditampilkan di website; admin mengirimnya.
-  const payment = SITE.featureFlags.showPaymentDetails
+  const payment = opts.paidOnline
+    ? `<p>${t.paidOnline}</p>`
+    : SITE.featureFlags.showPaymentDetails
     ? `<p>${t.payLead(rupiah(opts.total))}</p>
     ${table([
       [t.bank, opts.bank.name],

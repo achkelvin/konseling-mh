@@ -1,13 +1,14 @@
 <template>
   <WizardShell
     :title="m.konseling.title"
-    :steps="m.konseling.steps"
+    :steps="calMode ? m.konseling.stepsCal : m.konseling.steps"
     :current="step"
     :can-next="canNext"
     :busy="busy"
     :error="error"
     :submit-label="m.common.submit"
     :hide-footer="!!result"
+    :hide-next="calMode && step === 3"
     @back="back"
     @next="next"
   >
@@ -17,6 +18,7 @@
       :total="result.total"
       :email="form.person.email"
       :email-sent="result.emailSent"
+      :paid-online="result.paidOnline"
       :rows="[
         [m.konseling.rowService, m.services[result.serviceId as ServiceId].name],
         [m.konseling.rowSchedule, `${date(result.date)}, ${result.time} WIB`],
@@ -77,6 +79,7 @@
         </div>
       </fieldset>
 
+      <template v-if="!calMode">
       <h2 class="mt-8 font-sans text-sm font-semibold">{{ m.konseling.available }}</h2>
       <p class="mt-1 text-xs text-ink/55">{{ m.konseling.tzNote }}</p>
       <p v-if="!days.length" class="mt-3 text-sm text-ink/60">{{ m.konseling.noSchedule }}</p>
@@ -103,6 +106,7 @@
       <button v-if="days.length > shownDays.length" type="button" class="mt-5 text-sm font-semibold text-accent-600 underline underline-offset-4" @click="dayLimit += 7">
         +7 {{ lang === 'en' ? 'more days' : 'hari berikutnya' }}
       </button>
+      </template>
     </div>
 
     <!-- 2. Formulir -->
@@ -163,6 +167,26 @@
       <p v-if="form.person.discount !== 'none' && !price.discountApplied" class="mt-3 text-xs text-ink/60">
         {{ m.konseling.discountNotApplicable }}
       </p>
+
+      <!-- Cal.com: pilih jadwal di kalender; pemesanan selesai saat booking Cal.com berhasil -->
+      <section v-if="calMode && calLink" class="mt-8">
+        <h2 class="text-xl font-medium text-brand-700">{{ m.konseling.calTitle }}</h2>
+        <p class="mt-1 text-sm text-ink/70">{{ m.konseling.calLead }}</p>
+        <p v-if="abroad && usesIntlEvent" class="mt-2 rounded-lg bg-brand-50 px-4 py-2.5 text-sm text-brand-700">{{ m.konseling.calIntl }}</p>
+        <p v-if="busy" class="mt-3 text-sm font-medium text-brand-700" role="status">{{ m.konseling.calSaving }}</p>
+        <CalEmbed
+          :key="calLink"
+          class="mt-4"
+          :cal-link="calLink"
+          :name="form.person.fullName"
+          :email="form.person.email"
+          :notes="calNotes"
+          :lang="lang"
+          :loading-text="m.konseling.calLoading"
+          :failed-text="m.konseling.calFailed"
+          @booked="onCalBooked"
+        />
+      </section>
     </div>
   </WizardShell>
 </template>
@@ -176,6 +200,8 @@ const route = useRoute()
 const { data: sched, refresh } = await useFetch('/api/schedule')
 
 const bookable = SITE.services.filter((s) => s.bookable)
+// Cal.com aktif bila username diisi di shared/utils/site.ts
+const calMode = calEnabled()
 const offline = serviceById('offline')
 
 const step = ref(1)
@@ -190,6 +216,7 @@ const result = ref<{
   date: string
   time: string
   emailSent: boolean
+  paidOnline?: boolean
 } | null>(null)
 
 // ?service=video dari tombol "Pesan" di beranda
@@ -213,6 +240,19 @@ const slot = computed(() => {
 })
 const minor = computed(() => isMinor(form.person.birthDate))
 const price = computed(() => priceFor(form.serviceId, form.person.discount, minor.value))
+const abroad = computed(() => isAbroad(form.person.country))
+const calLink = computed(() => calLinkFor(form.serviceId, abroad.value))
+const usesIntlEvent = computed(() => !!SITE.cal.intlEvents[form.serviceId])
+// catatan untuk admin di Cal.com (tanpa cerita detail)
+const calNotes = computed(() =>
+  [
+    `${form.person.whatsapp} · ${form.person.city}, ${form.person.country}`,
+    form.topics.length ? `Topik: ${form.topics.join(', ')}` : '',
+    price.value.discountApplied ? `Diskon ${price.value.discountApplied} (cek bukti)` : '',
+  ]
+    .filter(Boolean)
+    .join(' — '),
+)
 
 /** Jam lokal pemesan bila zona waktunya bukan WIB (brief: deteksi otomatis). */
 const browserOffset = ref<number | null>(null)
@@ -226,7 +266,7 @@ function localTime(d: string, t: string) {
 const canNext = computed(() => {
   switch (step.value) {
     case 1:
-      return !!slot.value?.available
+      return calMode || !!slot.value?.available
     case 2:
       return personValid.value && form.consent && (!minor.value || form.guardianConsent)
     default:
@@ -240,7 +280,7 @@ const summary = computed<[string, string][]>(() => {
   const rows: [string, string][] = [
     [k.rowService, `${m.value.services[s.id].name} · ${s.minutes} ${m.value.common.minutes}`],
     [k.rowPsychologist, SITE.psychologist.name],
-    [k.rowSchedule, slot.value ? `${date(slot.value.date)}, ${slot.value.time} WIB` : '-'],
+    ...(calMode ? [] : [[k.rowSchedule, slot.value ? `${date(slot.value.date)}, ${slot.value.time} WIB` : '-'] as [string, string]]),
     [k.rowName, form.person.nickname || form.person.fullName],
     ['WhatsApp', form.person.whatsapp],
     ['Email', form.person.email],
@@ -262,13 +302,22 @@ async function next() {
     step.value++
     return
   }
+  await submit({ slotId: form.slotId })
+}
+
+/** Cal.com melaporkan booking berhasil → simpan pendaftaran dan kirim email. */
+function onCalBooked(cal: { uid: string; startTime: string; endTime?: string; status?: string; paymentRequired?: boolean }) {
+  submit({ cal })
+}
+
+async function submit(when: { slotId?: string; cal?: object }) {
   busy.value = true
   try {
     result.value = await $fetch('/api/bookings', {
       method: 'POST',
       body: {
         serviceId: form.serviceId,
-        slotId: form.slotId,
+        ...when,
         person: form.person,
         topics: form.topics,
         consent: form.consent,

@@ -13,6 +13,8 @@ export async function notify(opts: {
   clientSubject: string
   clientRows: [string, unknown][]
   lang: Lang
+  /** sudah dibayar lewat PayPal di Cal.com */
+  paidOnline?: boolean
 }) {
   const config = useRuntimeConfig()
   try {
@@ -33,6 +35,7 @@ export async function notify(opts: {
         bank: config.public.bank,
         whatsapp: config.public.whatsappNumber,
         lang: opts.lang,
+        paidOnline: opts.paidOnline,
       }),
     })
     return true

@@ -50,7 +50,7 @@
           <button v-if="current > 1" class="btn-ghost" type="button" @click="$emit('back')">{{ m.common.back }}</button>
           <NuxtLink v-else to="/" class="btn-ghost md:invisible">{{ m.common.home }}</NuxtLink>
           <p v-if="error" class="flex-1 text-right text-sm text-red-600" role="alert">{{ error }}</p>
-          <button class="btn-primary min-w-32" type="button" :disabled="!canNext || busy" @click="$emit('next')">
+          <button v-if="!hideNext" class="btn-primary min-w-32" type="button" :disabled="!canNext || busy" @click="$emit('next')">
             {{ busy ? m.common.processing : current === steps.length ? submitLabel : m.common.next }}
           </button>
         </div>
@@ -69,6 +69,8 @@ defineProps<{
   error?: string
   submitLabel: string
   hideFooter?: boolean
+  /** sembunyikan tombol Lanjut/Kirim (mis. saat Cal.com yang menyelesaikan pemesanan) */
+  hideNext?: boolean
 }>()
 defineEmits<{ back: []; next: [] }>()
 const { m } = useLocale()
