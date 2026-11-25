@@ -26,6 +26,11 @@ export interface Testimonial {
 export const SITE = {
   brand: {
     name: 'Rena Jiwa',
+    /**
+     * Alamat situs (tanpa garis miring di akhir). Sementara memakai subdomain gratis Vercel;
+     * ganti ke domain sendiri (mis. https://renajiwa.my.id) setelah dibeli dan dihubungkan.
+     */
+    siteUrl: 'https://renajiwa.vercel.app',
     tagline: 'Awal baru dimulai dari bercerita',
     instagram: '@rena.jiwa',
     email: 'renajiwa@gmail.com',
