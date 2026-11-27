@@ -17,6 +17,18 @@ npm run dev        # http://localhost:3000
 Salin `.env.example` menjadi `.env` untuk SMTP (email formulir) dan pengaturan lain. Tanpa SMTP, email
 disimpan sebagai file HTML di `.outbox/`.
 
+## Testimoni
+
+Klien mengisi formulir di `/testimoni` (tautan di footer dan di bagian testimoni beranda).
+Setiap kiriman disimpan sebagai *pending* dan admin menerima email dengan tombol **Setujui** / **Tolak**.
+Yang disetujui langsung tampil di beranda; bagian testimoni tersembunyi selama belum ada yang disetujui.
+
+Penyiapan di Vercel (sekali saja):
+1. **Storage → Upstash Redis** (paket gratis) → hubungkan ke proyek. Ini mengisi `KV_REST_API_URL` dan
+   `KV_REST_API_TOKEN` otomatis. Lokal tanpa variabel itu, data disimpan di `.data/testimonials.json`.
+2. Environment Variables: `NUXT_TESTIMONIALS_SECRET` = teks acak panjang (untuk tautan Setujui/Tolak).
+3. SMTP harus aktif agar email moderasi terkirim. Redeploy.
+
 ## Deploy ke Vercel
 
 1. Import repo ini di vercel.com → New Project. Framework: Nuxt (terdeteksi otomatis).

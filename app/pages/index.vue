@@ -184,7 +184,10 @@
     <!-- ───────────── Testimoni (tersembunyi sampai flag aktif dan ada isi) ───────────── -->
     <section v-if="testimonials.length" id="testimoni" class="py-20">
       <div class="container-page">
-        <h2 class="text-3xl font-medium tracking-tight text-brand-700">{{ m.home.testiTitle }}</h2>
+        <div class="flex flex-wrap items-end justify-between gap-4">
+          <h2 class="text-3xl font-medium tracking-tight text-brand-700">{{ m.home.testiTitle }}</h2>
+          <NuxtLink to="/testimoni" class="btn-ghost !py-2">{{ m.home.testiCta }}</NuxtLink>
+        </div>
         <div class="mt-8 flex snap-x gap-5 overflow-x-auto pb-4">
           <figure v-for="t in testimonials" :key="t.quote" class="card w-80 shrink-0 snap-start">
             <blockquote class="font-display text-lg leading-snug text-brand-700">“{{ t.quote }}”</blockquote>
@@ -226,7 +229,9 @@ useHead({ title: () => m.value.home.pageTitle })
 
 const services = visibleServices()
 const discountable = SITE.services.filter((s) => s.discountable)
-const testimonials = SITE.featureFlags.showTestimonials ? SITE.testimonials.filter((t) => t.consent === true) : []
+// dari Google Form (lewat /api/testimonials) + SITE.testimonials; kosong bila flag mati
+const { data: testiData } = await useFetch('/api/testimonials', { default: () => [] })
+const testimonials = computed(() => testiData.value ?? [])
 // FAQ "Offline?" ikut disembunyikan bila layanan offline dimatikan
 const faqs = computed(() => m.value.home.faqs.filter((f) => !f.offline || SITE.featureFlags.offlineEnabled))
 </script>

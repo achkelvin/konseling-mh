@@ -42,8 +42,11 @@ export const SITE = {
   featureFlags: {
     /** menu "Pilih Psikolog/Helper" dan jadwal per psikolog — nyalakan saat ada psikolog mitra */
     showPsychologistPicker: false,
-    /** bagian "Cerita dari mereka" — nyalakan setelah konfirmasi etik dan ada isi */
-    showTestimonials: false,
+    /**
+     * Bagian "Cerita dari mereka" di beranda. Isinya testimoni dari /testimoni yang disetujui admin
+     * lewat email; bagian ini tetap tersembunyi selama belum ada yang disetujui.
+     */
+    showTestimonials: true,
     /** layanan Offline (Jakarta). false = sembunyikan baris, FAQ, dan tombol "Tanya admin" */
     offlineEnabled: true,
     /**

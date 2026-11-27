@@ -9,6 +9,8 @@ export default defineNuxtConfig({
     smtp: { host: '', port: '587', user: '', pass: '', from: '' },
     // alamat penerima formulir; bawaan dari brief, bisa ditimpa NUXT_ADMIN_EMAIL
     adminEmail: 'renajiwa@gmail.com',
+    // kunci rahasia untuk tautan Setujui/Tolak testimoni (NUXT_TESTIMONIALS_SECRET, wajib di produksi)
+    testimonialsSecret: '',
     public: {
       // WhatsApp admin dari brief (bisa ditimpa NUXT_PUBLIC_WHATSAPP_NUMBER)
       whatsappNumber: '+62 857-9373-1917',
