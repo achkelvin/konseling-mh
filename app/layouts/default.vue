@@ -72,6 +72,7 @@
               <li><NuxtLink to="/konseling" class="hover:text-accent-300">{{ m.common.register }}</NuxtLink></li>
               <li><NuxtLink to="/cek-kesehatan-mental" class="hover:text-accent-300">{{ m.nav.checkup }}</NuxtLink></li>
               <li><NuxtLink to="/#faq" class="hover:text-accent-300">{{ m.nav.faq }}</NuxtLink></li>
+              <li><NuxtLink to="/testimoni" class="hover:text-accent-300">{{ m.testi.nav }}</NuxtLink></li>
             </ul>
           </div>
           <div>
